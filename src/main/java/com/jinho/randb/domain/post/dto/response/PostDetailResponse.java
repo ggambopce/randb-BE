@@ -1,22 +1,15 @@
 package com.jinho.randb.domain.post.dto.response;
 
 import com.jinho.randb.domain.post.dto.PostDto;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class PostDetailResponse {
+@AllArgsConstructor
+public class PostDetailResponse { // 응답 구조 명확히 정의
 
     private PostDto post;
-
-    public PostDetailResponse(PostDto postDto) {
-        this.post = postDto;
-    }
-
-    public static PostDetailResponse of(PostDto postDto){
-        return new PostDetailResponse(postDto);
-    }
-
 
 }

@@ -25,23 +25,7 @@ public class UserAddRequest {
     @NotBlank(message = "토론 내용을 입력해주세요")
     private String postContent;
 
-    @Schema(description = "사용자 이름", example = "홍길동")
-    private String username;
-
-    @Schema(description = "사용자 id", example = "1")
-    private Long accountId;
-
-    // 엔티티 변환 메서드
-    public Post toEntity(Account account) {
-        return Post.builder()
-                .postTitle(this.postTitle)
-                .postContent(this.postContent)
-                .account(account) // 작성자 설정
-                .createdAt(LocalDateTime.now()) // 작성 시간 설정
-                .type(PostType.DISCUSSING) // 기본 상태를 DISCUSSING으로 설정
-                .build();
-    }
-
-
-
 }
+
+
+

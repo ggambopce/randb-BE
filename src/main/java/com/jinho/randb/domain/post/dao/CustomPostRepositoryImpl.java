@@ -33,14 +33,14 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
 
         Post postDetail = jpaQueryFactory
                 .selectFrom(post)
-                .leftJoin(post.account).fetchJoin()  // account와 조인하여 작성자 정보도 가져옴
+                .leftJoin(post.profile).fetchJoin()  // profile와 조인하여 작성자 정보도 가져옴
                 .where(post.id.eq(postId))
                 .fetchOne();
 
         if (postDetail == null) {
             throw new RuntimeException("Post not found for id: " + postId);
         }
-        return PostDto.of(postDetail);
+        return PostDto.of(postDetail); // 엔티티를 DTO로 변환
 
     }
 
@@ -57,7 +57,7 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
         }
 
         // QueryDSL을 사용해 데이터 조회
-        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.type, post.createdAt, account.username)
+        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.postType, post.createdAt, account.username)
                 .from(post)
                 .leftJoin(post.account, account) // 게시글 작성자와 조인
                 .where(builder)
@@ -72,7 +72,7 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
                         tuple.get(post.postTitle),
                         tuple.get(post.postContent),
                         tuple.get(account.username),
-                        tuple.get(post.type)
+                        tuple.get(post.postType)
                 ))
                 .collect(Collectors.toList());
 
@@ -87,14 +87,14 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
     public List<PostDto> mainPagePost() {
 
         //튜플로 토론글 id, 제목, 내용을 조회
-        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.type)
+        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.postType)
                 .from(post)
                 .fetch();
 
         return list.stream().map(tuple -> PostDto.from(tuple.get(post.id),
                 tuple.get(post.postTitle),
                 tuple.get(post.postContent),
-                tuple.get(post.type)
+                tuple.get(post.postType)
                 )).collect(Collectors.toList());
     } //from은 정적 팩토리 메서드로 new 키워드를 사용하는 것과는 다른 방식. 팩토리 메서드는 new 없이 호출
 

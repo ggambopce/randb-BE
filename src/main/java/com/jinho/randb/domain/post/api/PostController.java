@@ -57,7 +57,7 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"모든 값을 입력해 주세요\"}")))
     })
     @PostMapping(value = "/api/user/posts")
-    public ResponseEntity<?> postAdd(@Valid @RequestBody UserAddRequest userAddPostDto, BindingResult bindingResult, @AuthenticationPrincipal PrincipalDetails principalDetails){
+    public ResponseEntity<?> postAdd(@Valid @RequestBody UserAddRequest userAddRequest, BindingResult bindingResult, @AuthenticationPrincipal PrincipalDetails principalDetails){
 
         try{
             // 요청 유효성 검사
@@ -65,7 +65,7 @@ public class PostController {
             if (errorMap != null) return errorMap;
 
             // 게시글 저장
-            postService.save(userAddPostDto, principalDetails.getAccountDto().getId());
+            postService.save(userAddRequest, principalDetails.getAccountDto().getId());
 
             return ResponseEntity.ok(new ControllerApiResponse(true, "작성 성공"));
         } catch (NoSuchElementException e) {

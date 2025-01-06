@@ -2,7 +2,6 @@ package com.jinho.randb.domain.post.application;
 
 import com.jinho.randb.domain.account.dao.AccountRepository;
 import com.jinho.randb.domain.account.domain.Account;
-import com.jinho.randb.domain.account.dto.AccountDto;
 import com.jinho.randb.domain.post.dao.PostRepository;
 import com.jinho.randb.domain.post.dao.PostStatisticsRepository;
 import com.jinho.randb.domain.post.domain.Post;
@@ -12,20 +11,25 @@ import com.jinho.randb.domain.post.dto.PostDto;
 import com.jinho.randb.domain.post.dto.PostStatisticsResponseDto;
 import com.jinho.randb.domain.post.dto.request.UserAddRequest;
 import com.jinho.randb.domain.post.dto.request.UserUpdateRequest;
-import com.jinho.randb.domain.post.dto.response.*;
+import com.jinho.randb.domain.post.dto.response.MainPagePostResponse;
+import com.jinho.randb.domain.post.dto.response.PostDetailResponse;
+import com.jinho.randb.domain.post.dto.response.PostResponse;
+import com.jinho.randb.domain.profile.domain.Profile;
 import com.jinho.randb.domain.votes.dao.VoteRepository;
 import com.jinho.randb.domain.votes.domain.VoteType;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchDataException;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchErrorType;
 import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,17 +50,22 @@ public class PostServiceImpl implements PostService {
     public void save(UserAddRequest userAddRequest, Long accountId) {
 
         // Account 조회
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new NoSuchElementException("계정을 찾을 수 없습니다."));
+        Account account = getAccount(accountId);
+
+        // Account에서 Profile 조회
+        Profile profile = account.getProfile();
+        if (profile == null) {
+            throw new NoSuchElementException("해당 Account에 연결된 Profile이 없습니다.");
+        }
 
         // DTO -> domain 변환
-        Post post = Post.builder()
-                .postTitle(userAddRequest.getPostTitle())
-                .postContent(userAddRequest.getPostContent())
-                .account(account) // 작성자 정보 설정
-                .type(PostType.DISCUSSING) // 기본상태를 DISCUSSING으로 설정
-                .createdAt(LocalDateTime.now())
-                .build();
+        Post post = Post.createPost(
+                userAddRequest.getPostTitle(),
+                userAddRequest.getPostContent(),
+                profile, // 작성자 별명
+                account, // 사용자 정보
+                PostType.DISCUSSING // 기본 상태 설정
+        );
 
         postRepository.save(post);
     }
@@ -74,8 +83,8 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public PostDetailResponse getPostDetail(Long postId) {
-        PostDto postDetail = postRepository.getPostDetail(postId);
-        return PostDetailResponse.of(postDetail.toDto());
+        PostDto postDto = postRepository.getPostDetail(postId);
+        return new PostDetailResponse(postDto);
     }
 
     /**
@@ -242,5 +251,10 @@ public class PostServiceImpl implements PostService {
         );
     }
 
+
+    /* 사용자 정보 조회 메서드*/
+    private Account getAccount(Long accountId) {
+        return accountRepository.findById(accountId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_ACCOUNT));
+    }
 
 }

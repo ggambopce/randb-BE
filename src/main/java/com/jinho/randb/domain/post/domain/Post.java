@@ -1,6 +1,7 @@
 package com.jinho.randb.domain.post.domain;
 
 import com.jinho.randb.domain.account.domain.Account;
+import com.jinho.randb.domain.profile.domain.Profile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -36,17 +37,21 @@ public class Post {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @Schema(hidden = true)
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "account_id", nullable = false)
     private Account account;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id")
+    private Profile profile; // 작성자의 프로필 정보
 
     @Enumerated(EnumType.STRING)
     @Column(name = "post_type", nullable = false)
-    private PostType type; // 상태
+    private PostType postType; // 상태
 
     private LocalDateTime completedAt;
 
     public void updatePostType(PostType newType) {
-        this.type = newType;
+        this.postType = newType;
         this.updatedAt = LocalDateTime.now(); // 상태 변경 시 업데이트 시간 갱신
     }
 
@@ -56,4 +61,13 @@ public class Post {
         this.updatedAt = LocalDateTime.now().withNano(0).withSecond(0);
     }
 
+    public static Post createPost(String postTitle, String postContent, Profile profile,Account account, PostType postType) {
+        return Post.builder()
+                .postTitle(postTitle)
+                .postContent(postContent)
+                .profile(profile)
+                .account(account)
+                .postType(postType)
+                .build();
+    }
 }
