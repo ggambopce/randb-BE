@@ -3,6 +3,7 @@ package com.jinho.randb.domain.account.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jinho.randb.domain.opinion.domain.Opinion;
 import com.jinho.randb.domain.post.domain.Post;
+import com.jinho.randb.domain.profile.domain.Profile;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,7 +23,6 @@ import java.util.List;
 @ToString(exclude = {"posts"})
 public class Account {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id")
@@ -38,8 +38,6 @@ public class Account {
 
     private String username;
 
-    private String nickname;
-
     private String password;
 
     private LocalDate createAt;
@@ -54,6 +52,9 @@ public class Account {
     @Builder.Default
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL,orphanRemoval = true)
     List<Opinion> opinions = new ArrayList<>();
+
+    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Profile profile;
 
     public List<String> getRoleList() {
         if (this.roles != null && this.roles.length() > 0) {

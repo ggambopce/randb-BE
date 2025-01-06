@@ -81,18 +81,6 @@ public class SignUpServiceImpl implements SignUpService {
         return Map.of(USE_LOGIN_ID, true);
     }
     /**
-     * 회원가입시 닉네임이 유효한지 확인합니다.
-     * @param nickname 회원가입시 사용할 닉네임
-     * @return 닉네임이 유효할 경우 true, 그렇지 않을 경우 false
-     */
-    @Override
-    public void nickNameValid(String nickname) {
-        boolean isNicknameValid = Pattern.compile("^[a-zA-Z0-9가-힣]{4,12}$").matcher(nickname).matches();
-        if (!isNicknameValid || accountRepository.existsByNickname(nickname)) {
-            throw new InvalidIdException("사용 불가능한 닉네임입니다.");
-        }
-    }
-    /**
      * 회원가입시 이메일 인증번호 유효성 검사
      * @param code
      * @return 인증 성공시 true, 실패시 false

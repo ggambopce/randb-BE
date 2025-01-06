@@ -26,6 +26,8 @@ public class ProfileDto {
 
     private Long id;
 
+    private String nickname; // 별명
+
     private Gender gender; // 성별
 
     private LocalDate age; // 만 나이
@@ -44,10 +46,13 @@ public class ProfileDto {
 
     private AccountDto account;
 
+    private String profileImgUrl; // 프로필 이미지 Url
+
 
     public static ProfileDto of(Profile profile) {
         return ProfileDto.builder()
                 .id(profile.getId())
+                .nickname(profile.getNickname())
                 .gender(profile.getGender())
                 .age(profile.getAge())
                 .bio(profile.getBio())

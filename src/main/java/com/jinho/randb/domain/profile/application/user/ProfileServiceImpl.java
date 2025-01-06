@@ -3,12 +3,13 @@ package com.jinho.randb.domain.profile.application.user;
 import com.jinho.randb.domain.account.dao.AccountRepository;
 import com.jinho.randb.domain.account.domain.Account;
 import com.jinho.randb.domain.image.application.S3UploadService;
+import com.jinho.randb.domain.image.dao.ImgRepository;
 import com.jinho.randb.domain.image.domain.UploadFile;
 import com.jinho.randb.domain.profile.dao.ProfileRepository;
 import com.jinho.randb.domain.profile.domain.Profile;
 import com.jinho.randb.domain.profile.dto.ProfileDto;
-import com.jinho.randb.domain.profile.dto.request.UserAddRequest;
-import com.jinho.randb.domain.profile.dto.request.UserUpdateRequest;
+import com.jinho.randb.domain.profile.dto.request.ProfileAddRequest;
+import com.jinho.randb.domain.profile.dto.request.ProfileUpdateRequest;
 import com.jinho.randb.domain.profile.dto.response.ProfileDetailResponse;
 import com.jinho.randb.global.exception.ex.nosuch.NoSuchDataException;
 import com.jinho.randb.global.exception.ex.nosuch.NoSuchErrorType;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.util.List;
 
 @Transactional
 @RequiredArgsConstructor
@@ -29,19 +30,20 @@ public class ProfileServiceImpl implements ProfileService{
     private final ProfileRepository profileRepository;
     private final AccountRepository accountRepository;
     private final S3UploadService s3UploadService;
+    private final ImgRepository imgRepository;
 
     /**
      * 새로운 프로필 생성
-     * @param userAddRequest - 프로필 생성 요청 DTO
+     * @param profileAddRequest - 프로필 생성 요청 DTO
      * @param accountId - 계정 ID
      */
     @Override
-    public void save(UserAddRequest userAddRequest, Long accountId, MultipartFile multipartFile){
+    public void save(ProfileAddRequest profileAddRequest, Long accountId, MultipartFile multipartFile){
 
         // Account 조회
         Account account = getAccount(accountId);
         // DTO -> Entity 변환
-        Profile profile = userAddRequest.toEntity(account);
+        Profile profile = profileAddRequest.toEntity(account);
         // 이미지 파일 업로드
         s3UploadService.uploadFile(multipartFile, profile);
         // 프로필 저장
@@ -51,25 +53,64 @@ public class ProfileServiceImpl implements ProfileService{
 
 
     @Override
-    public void update(Long profileId, Long accountId, UserUpdateRequest userUpdateRequest, MultipartFile multipartFile) {
-
+    public void update(Long profileId, Long accountId, ProfileUpdateRequest profileUpdateRequest, List<MultipartFile> multipartFiles) {
+        // Account 및 Profile 조회
         Account account = getAccount(accountId);
         Profile profile = getProfile(profileId);
+
+        // 권한 검증
         validatePostOwner(account, profile);
 
-        // 기존 이미지 파일명 가져오기
-        String existingFileName = profile.getProfileImage().getStoreFileName();
+        // 기존 파일 삭제 및 업데이트
+        List<UploadFile> existingFiles = profile.getUploadFiles();
 
-        // 이미지 파일 업로드
-        s3UploadService.updateFile(existingFileName, multipartFile, profile);
+        for (MultipartFile newFile : multipartFiles) {
+            String originalFilename = newFile.getOriginalFilename();
 
-        profile.updateProfile( // Transactional에서 엔티티의 상태변경으로 수정
-                userUpdateRequest.getGender(),
-                userUpdateRequest.getAge(),
-                userUpdateRequest.getBio(),
-                userUpdateRequest.getInstagramUrl(),
-                userUpdateRequest.getBlogUrl(),
-                userUpdateRequest.getYoutubeUrl());
+            // 기존 파일 삭제 (파일명이 동일한 경우)
+            existingFiles.stream()
+                    .filter(file -> file.getOriginFileName().equals(originalFilename))
+                    .findFirst()
+                    .ifPresent(existingFile -> {
+                        s3UploadService.deleteFile(existingFile.getStoreFileName());
+                        imgRepository.delete(existingFile); // DB에서 삭제
+                    });
+
+            // 새로운 파일 업로드
+            String newStoreFileName = s3UploadService.uploadFile(newFile, profile);
+
+            // UploadFile 생성 및 Profile 연관 설정
+            UploadFile newUploadFile = UploadFile.createUploadFile(originalFilename, newStoreFileName);
+            profile.addUploadFile(newUploadFile); // Profile에 추가
+        }
+
+        // Profile 정보 업데이트
+        profile.updateProfile(
+                profileUpdateRequest.getNickname(),
+                profileUpdateRequest.getGender(),
+                profileUpdateRequest.getAge(),
+                profileUpdateRequest.getBio(),
+                profileUpdateRequest.getInstagramUrl(),
+                profileUpdateRequest.getBlogUrl(),
+                profileUpdateRequest.getYoutubeUrl()
+        );
+
+        // Profile 저장 (변경된 파일 정보 포함)
+        profileRepository.save(profile);
+    }
+
+    @Override
+    public void deleteProfileImage(Long profileId, Long fileId) {
+        Profile profile = getProfile(profileId);
+
+        UploadFile uploadFile = profile.getUploadFiles().stream()
+                .filter(file -> file.getId().equals(fileId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
+
+        s3UploadService.deleteFile(uploadFile.getStoreFileName());
+        profile.removeUploadFile(uploadFile);
+        imgRepository.delete(uploadFile);
     }
 
 

@@ -18,7 +18,6 @@ public interface AccountRepository extends JpaRepository<Account,Long>,CustomAcc
 
     boolean existsByLoginId(String loginId);
 
-    boolean existsByNickname(String nickname);
 
     @Query("select m from Account m where  binary(m.loginId)=:loginId") //MySQL의 BINARY 타입을 사용해 대소문자를 구문하기 위한 쿼리 사용
     Account findByCaseSensitiveLoginId(String loginId);
