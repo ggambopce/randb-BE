@@ -72,7 +72,8 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
                         tuple.get(post.postTitle),
                         tuple.get(post.postContent),
                         tuple.get(account.username),
-                        tuple.get(post.postType)
+                        tuple.get(post.postType),
+                        tuple.get(post.likeCount)
                 ))
                 .collect(Collectors.toList());
 
@@ -83,19 +84,34 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
         return new SliceImpl<>(collect, pageable, hasNext);
     }
 
+    /**
+     * 메인 페이지 좋아요순 4개 조회
+     */
     @Override
     public List<PostDto> mainPagePost() {
 
-        //튜플로 토론글 id, 제목, 내용을 조회
-        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.postType)
+        // 튜플로 토론글 id, 제목, 내용을 조회하며 likeCount가 높은 순으로 상위 4개를 가져옴
+        List<Tuple> list = jpaQueryFactory.select(
+                        post.id,
+                        post.postTitle,
+                        post.postContent,
+                        post.postType,
+                        post.likeCount
+                )
                 .from(post)
+                .orderBy(post.likeCount.desc()) // likeCount 내림차순 정렬
+                .limit(4) // 상위 4개만 제한
                 .fetch();
 
-        return list.stream().map(tuple -> PostDto.from(tuple.get(post.id),
-                tuple.get(post.postTitle),
-                tuple.get(post.postContent),
-                tuple.get(post.postType)
-                )).collect(Collectors.toList());
+        return list.stream()
+                .map(tuple -> PostDto.from(
+                        tuple.get(post.id),
+                        tuple.get(post.postTitle),
+                        tuple.get(post.postContent),
+                        tuple.get(post.postType),
+                        tuple.get(post.likeCount) // likeCount 포함
+                ))
+                .collect(Collectors.toList());
     } //from은 정적 팩토리 메서드로 new 키워드를 사용하는 것과는 다른 방식. 팩토리 메서드는 new 없이 호출
 
     /**

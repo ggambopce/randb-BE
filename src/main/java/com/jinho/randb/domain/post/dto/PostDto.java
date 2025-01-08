@@ -27,12 +27,14 @@ public class PostDto {
 
     private PostType postType; // 토론글 상태
 
+    private Integer likeCount;      // 좋아요 수
+
     public PostDto toDto() {
-        return new PostDto(id, postTitle, postContent, nickname, postType);
+        return new PostDto(id, postTitle, postContent, nickname, postType, likeCount);
     }
     // 정적 팩토리 메서드
-    public static PostDto from(Long id, String postTitle, String postContent, PostType type){ // 메이페이지에는 작성자 정보 노출 안함
-        return new PostDto(id, postTitle, postContent, null, type);
+    public static PostDto from(Long id, String postTitle, String postContent, PostType type, Integer likeCount){ // 메이페이지에는 작성자 정보 노출 안함
+        return new PostDto(id, postTitle, postContent, null, type, likeCount);
     }
 
     public static PostDto fromEntity(Post post) { // 전체 목록 조회시 사용, 엔티티를 DTO로 변환
@@ -41,7 +43,8 @@ public class PostDto {
                 post.getPostTitle(),
                 post.getPostContent(),
                 post.getProfile().getNickname(),
-                post.getPostType()
+                post.getPostType(),
+                post.getLikeCount()
         );
     }
 
@@ -51,7 +54,8 @@ public class PostDto {
                 post.getPostTitle(),
                 post.getPostContent(),
                 post.getProfile().getNickname(),
-                post.getPostType()
+                post.getPostType(),
+                post.getLikeCount()
         );
     }
 

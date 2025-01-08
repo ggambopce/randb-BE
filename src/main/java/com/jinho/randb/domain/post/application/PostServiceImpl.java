@@ -194,8 +194,6 @@ public class PostServiceImpl implements PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NoSuchElementException("해당 게시글을 찾을 수 없습니다."));
 
-
-        post.setCompletedAt(LocalDateTime.now());
         postRepository.save(post);
 
         // 투표 수 계산

@@ -14,7 +14,7 @@ public class MainPagePostResponse {
         this.posts = list;
     }
 
-    public static MainPagePostResponse of(List<PostDto> list){
+    public static MainPagePostResponse of(List<PostDto> list){ // 서비스로직에서 dto를 응답dto로 변환
         return new MainPagePostResponse(list);
     }
 }

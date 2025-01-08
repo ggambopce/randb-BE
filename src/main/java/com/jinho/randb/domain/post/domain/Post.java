@@ -48,7 +48,13 @@ public class Post {
     @Column(name = "post_type", nullable = false)
     private PostType postType; // 상태
 
-    private LocalDateTime completedAt;
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private Integer likeCount = 0; // 좋아요 수
+
+    public void setLikeCount(int count){            //좋아요 증가 set
+        this.likeCount = count;
+    }
 
     public void updatePostType(PostType newType) {
         this.postType = newType;
