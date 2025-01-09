@@ -14,6 +14,7 @@ import com.jinho.randb.domain.post.dto.request.UserUpdateRequest;
 import com.jinho.randb.domain.post.dto.response.MainPagePostResponse;
 import com.jinho.randb.domain.post.dto.response.PostDetailResponse;
 import com.jinho.randb.domain.post.dto.response.PostResponse;
+import com.jinho.randb.domain.post.dto.response.PostSearchResponse;
 import com.jinho.randb.domain.profile.domain.Profile;
 import com.jinho.randb.domain.votes.dao.VoteRepository;
 import com.jinho.randb.domain.votes.domain.VoteType;
@@ -104,16 +105,18 @@ public class PostServiceImpl implements PostService {
 
 
     /**
-     * 토론글을  전제조회하는 로직(무한페이징),
-     * @param postId  찾을 토론글 번호
-     * @return Response로 변환해 해당 토론글 전체목록을 반환
+     * 토론글 검색 로직(무한페이징)
+     * @param postId 찾을 토론글 번호
+     * @param searchKeyword 검색 키워드
+     * @param postType 게시글 유형
+     * @return PostSearchResponse 변환해 해당 토론글 전체 목록 반환
      */
     @Override
-    public PostResponse postPage(Long postId, Pageable pageable) {
+    public PostSearchResponse searchPost(String searchKeyword, PostType postType, Long postId, Pageable pageable) {
 
-        Slice<PostDto> allPost = postRepository.getAllPost(postId, pageable);
+        Slice<PostDto> postDtoSlice = postRepository.searchPosts( searchKeyword, postType, postId, pageable);
         // 다음 페이지 여부 및 현재 페이지 데이터를 `PostResponse`로 반환
-        return new PostResponse(allPost.hasNext(),allPost.getContent());
+        return new PostSearchResponse(postDtoSlice.hasNext(),postDtoSlice.getContent());
     }
 
     @Override

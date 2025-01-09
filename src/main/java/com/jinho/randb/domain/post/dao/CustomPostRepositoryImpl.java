@@ -6,6 +6,7 @@ import com.jinho.randb.domain.post.dto.PostDto;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
 
 import static com.jinho.randb.domain.account.domain.QAccount.account;
 import static com.jinho.randb.domain.post.domain.QPost.post;
+import static com.jinho.randb.domain.post.domain.QPostStatistics.postStatistics;
 
 @Slf4j
 @Repository
@@ -48,25 +50,54 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
     }
 
     /**
+     * 토론중으로 검색시 랜덤 순 4개 무한스크롤
+     * 투표중으로 검색시 RED와 BLUE비율이 박빙인 순 4개 무한스크롤
+     * 토론완료로 검색시 좋아요 순 으로 4개 무한스크롤
      * 토론글의 대해서 무한 페이징을 통해 페이징 처리 no-offset 방식을 사용(무한스크롤)
      */
     @Override
-    public Slice<PostDto> getAllPost(Long postId, Pageable pageable) {
+    public Slice<PostDto> searchPosts(String searchKeyword, PostType postType, Long lastPostId, Pageable pageable) {
 
         // 동적 쿼리 조건 생성
         BooleanBuilder builder = new BooleanBuilder();
-        if (postId != null) {
-            builder.and(post.id.gt(postId)); // postId 이후의 게시글만 조회
+        if (searchKeyword != null && !searchKeyword.isEmpty()) {
+            builder.and(post.postTitle.containsIgnoreCase(searchKeyword)); // 제목 검색
+        }
+        if (postType != null) {
+            builder.and(post.postType.eq(postType)); // postType 필터
+        }
+        if (lastPostId != null) {
+            builder.and(post.id.lt(lastPostId)); // 마지막 postId 이후의 데이터
         }
 
-        // QueryDSL을 사용해 데이터 조회
-        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.postType, post.createdAt, account.username)
+        // QueryDSL로 데이터 조회 및 정렬 조건 설정
+        JPAQuery<Tuple> query = jpaQueryFactory
+                .select(post.id, post.postTitle, post.postContent, post.postType, post.likeCount, post.createdAt, account.username)
                 .from(post)
                 .leftJoin(post.account, account) // 게시글 작성자와 조인
                 .where(builder)
-                .orderBy(post.createdAt.desc()) // 생성일 기준 내림차순 정렬
-                .limit(pageable.getPageSize() + 1) // 페이지 크기 + 1로 데이터 조회
-                .fetch();
+                .limit(pageable.getPageSize() + 1); // 페이지 크기 + 1 조회
+
+        switch (postType) {
+            case DISCUSSING:
+                query.orderBy(Expressions.numberTemplate(Double.class, "function('RAND')").asc()); // 랜덤 정렬
+                break;
+            case VOTING:
+                query.leftJoin(postStatistics).on(post.id.eq(postStatistics.post.id))
+                        .orderBy(Expressions.numberTemplate(Double.class,
+                                "ABS({0} - {1})",
+                                postStatistics.redVotePercentage,
+                                postStatistics.blueVotePercentage).asc()); // 박빙 순
+                break;
+            case COMPLETED:
+                query.orderBy(post.likeCount.desc()); // 좋아요 순
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported PostType: " + postType);
+        }
+
+        // 결과 조회
+        List<Tuple> list = query.fetch();
 
         // 조회된 Tuple 데이터를 PostDto로 변환
         List<PostDto> collect = list.stream()

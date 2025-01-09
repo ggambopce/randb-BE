@@ -207,8 +207,8 @@ public class PostController {
 
 
     @Operation(
-            summary = "전체 토론글 조회 API",
-            description = "토론글의 전체 목록을 조회할 수 있습니다.(무한페이징)",
+            summary = "토론글 검색(무한 스크롤)",
+            description = "토론글의 타입에 따라 검색어로 조회할 수 있습니다.(무한페이징)",
             tags = {"일반 사용자 토론글 컨트롤러"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OK",
@@ -218,10 +218,13 @@ public class PostController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples =  @ExampleObject(value = "{\"success\": false, \"message\": \"잘못된 요청입니다.\"}")))
     })
-    @GetMapping("/api/posts")
-    public ResponseEntity<?> findAllPost(@RequestParam(value = "postId", required = false) Long postId, Pageable pageable) {
-        PostResponse postResponse = postService.postPage(postId, pageable);
-        return ResponseEntity.ok(new ControllerApiResponse<>(true, "조회성공", postResponse));
+    @GetMapping("/api/posts/search")
+    public ResponseEntity<?> searchPosts(@RequestParam(value = "postId", required = false) Long postId,
+                                         @RequestParam(value = "searchKeyword", required = false) String searchKeyword,
+                                         @RequestParam(value = "postType", required = false) PostType postType,
+                                         Pageable pageable) {
+        PostSearchResponse postSearchResponse = postService.searchPost(searchKeyword, postType, postId, pageable);
+        return ResponseEntity.ok(new ControllerApiResponse<>(true, "조회성공", postSearchResponse));
     }
 
 
