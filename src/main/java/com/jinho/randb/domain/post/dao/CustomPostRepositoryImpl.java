@@ -1,9 +1,11 @@
 package com.jinho.randb.domain.post.dao;
 
 import com.jinho.randb.domain.post.domain.Post;
+import com.jinho.randb.domain.post.domain.PostType;
 import com.jinho.randb.domain.post.dto.PostDto;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.jinho.randb.domain.account.domain.QAccount.account;
 import static com.jinho.randb.domain.post.domain.QPost.post;
@@ -85,13 +88,14 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
     }
 
     /**
-     * 메인 페이지 좋아요순 4개 조회
+     * 메인 페이지 토론글 4개 조회
+     * 상태에 따라 다른 조건으로 조회 토론중/투표중 랜덤1개, 투표완료 좋아요순2개
      */
     @Override
     public List<PostDto> mainPagePost() {
 
-        // 튜플로 토론글 id, 제목, 내용을 조회하며 likeCount가 높은 순으로 상위 4개를 가져옴
-        List<Tuple> list = jpaQueryFactory.select(
+        // "토론중" 상태 랜덤 1개
+        List<Tuple> discussingPost = jpaQueryFactory.select(
                         post.id,
                         post.postTitle,
                         post.postContent,
@@ -99,17 +103,53 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
                         post.likeCount
                 )
                 .from(post)
-                .orderBy(post.likeCount.desc()) // likeCount 내림차순 정렬
-                .limit(4) // 상위 4개만 제한
+                .where(post.postType.eq(PostType.DISCUSSING)) // "토론중" 조건
+                .orderBy(Expressions.numberTemplate(Double.class, "function('rand')").asc()) // 랜덤 정렬
+                .limit(1) // 1개만 가져오기
                 .fetch();
 
-        return list.stream()
+        // "투표중" 상태 랜덤 1개
+        List<Tuple> votingPost = jpaQueryFactory.select(
+                        post.id,
+                        post.postTitle,
+                        post.postContent,
+                        post.postType,
+                        post.likeCount
+                )
+                .from(post)
+                .where(post.postType.eq(PostType.VOTING)) // "투표중" 조건
+                .orderBy(Expressions.numberTemplate(Double.class, "function('rand')").asc()) // 랜덤 정렬
+                .limit(1) // 1개만 가져오기
+                .fetch();
+
+        // "토론 완료" 상태 좋아요 순 상위 2개
+        List<Tuple> completedPosts = jpaQueryFactory.select(
+                        post.id,
+                        post.postTitle,
+                        post.postContent,
+                        post.postType,
+                        post.likeCount
+                )
+                .from(post)
+                .where(post.postType.eq(PostType.COMPLETED)) // "토론 완료" 조건
+                .orderBy(post.likeCount.desc()) // 좋아요 내림차순 정렬
+                .limit(2) // 상위 2개 가져오기
+                .fetch();
+
+        // 모든 리스트를 병합
+        List<Tuple> combinedList = Stream.concat(
+                Stream.concat(discussingPost.stream(), votingPost.stream()),
+                completedPosts.stream()
+        ).collect(Collectors.toList());
+
+        // DTO로 변환하여 반환
+        return combinedList.stream()
                 .map(tuple -> PostDto.from(
                         tuple.get(post.id),
                         tuple.get(post.postTitle),
                         tuple.get(post.postContent),
                         tuple.get(post.postType),
-                        tuple.get(post.likeCount) // likeCount 포함
+                        tuple.get(post.likeCount)
                 ))
                 .collect(Collectors.toList());
     } //from은 정적 팩토리 메서드로 new 키워드를 사용하는 것과는 다른 방식. 팩토리 메서드는 new 없이 호출
