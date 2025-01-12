@@ -11,6 +11,7 @@ import com.jinho.randb.domain.post.dto.response.*;
 import com.jinho.randb.domain.post.exception.PostException;
 import com.jinho.randb.global.exception.ErrorResponse;
 import com.jinho.randb.global.exception.ex.BadRequestException;
+import com.jinho.randb.global.exception.ex.UnauthorizedException;
 import com.jinho.randb.global.payload.ControllerApiResponse;
 import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -143,7 +144,10 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 수정할 수 있습니다.\"}")))
     })
     @PostMapping("/api/user/update/posts/{post-id}")
-    public ResponseEntity<?> updatePost(@Valid @RequestBody UserUpdateRequest updatePostDto, BindingResult bindingResult, @PathVariable("post-id") Long postId){
+    public ResponseEntity<?> updatePost(@Valid @RequestBody UserUpdateRequest updatePostDto, BindingResult bindingResult, @PathVariable("post-id") Long postId, @AuthenticationPrincipal PrincipalDetails principalDetails ){
+        if (principalDetails == null) {
+            throw new UnauthorizedException("인증되지 않은 사용자입니다.");
+        }
 
         try {
             // 유효성 검사
@@ -151,7 +155,7 @@ public class PostController {
             if (errorMap != null) return errorMap;
 
             // 서비스 호출: 게시글 수정
-            postService.update(postId, updatePostDto);
+            postService.update(postId, principalDetails.getAccountId(), updatePostDto);
 
             // 성공 응답 반환
             return ResponseEntity.ok(new ControllerApiResponse(true, "토론글 수정 성공"));

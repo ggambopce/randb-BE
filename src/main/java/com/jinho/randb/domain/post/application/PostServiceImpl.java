@@ -152,31 +152,16 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void update(Long postId, UserUpdateRequest userUpdatePostDto) {
+    public void update(Long postId, Long accountId, UserUpdateRequest userUpdatePostDto) {
 
-        // 게시글 조회
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new NoSuchElementException("해당 게시물을 찾을 수 없습니다."));
-
-        // 현재 로그인된 사용자 정보 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof PrincipalDetails)) {
-            throw new AccessDeniedException("로그인된 사용자만 접근 가능합니다.");
-        }
-
-        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
-        String username = principalDetails.getUsername();
-
-        // 작성자 검증
-        if (!post.getAccount().getUsername().equals(username)) {
-            throw new AccessDeniedException("작성자만 수정 가능합니다.");
-        }
+        Account account = getAccount(accountId);
+        Post post = getPost(postId);
+        validatePostOwner(account, post);
 
         // 게시글 수정
         post.update(userUpdatePostDto.getPostTitle(), userUpdatePostDto.getPostContent());
 
-        // 변경 사항 저장
-        postRepository.save(post);
+        // 트랜잭션범위내 엔티티 변경감지로  변경 사항 자동 저장
     }
 
     @Override
@@ -258,4 +243,15 @@ public class PostServiceImpl implements PostService {
         return accountRepository.findById(accountId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_ACCOUNT));
     }
 
+    /* 게시글 조회 메서드*/
+    private Post getPost(Long postId) {
+        return postRepository.findById(postId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_POST));
+    }
+
+    /* 작성자 검증 메서드*/
+    private static void validatePostOwner(Account account, Post post) { // 객체를 생성하지 않고 호출하기위한 static
+        if(!post.getAccount().getLoginId().equals(account.getLoginId())) {
+            throw new IllegalArgumentException("작성자만 수정할 수 있습니다.");
+        }
+    }
 }

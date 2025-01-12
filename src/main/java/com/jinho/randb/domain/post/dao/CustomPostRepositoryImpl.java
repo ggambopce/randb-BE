@@ -78,22 +78,28 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
                 .where(builder)
                 .limit(pageable.getPageSize() + 1); // 페이지 크기 + 1 조회
 
-        switch (postType) {
-            case DISCUSSING:
-                query.orderBy(Expressions.numberTemplate(Double.class, "function('RAND')").asc()); // 랜덤 정렬
-                break;
-            case VOTING:
-                query.leftJoin(postStatistics).on(post.id.eq(postStatistics.post.id))
-                        .orderBy(Expressions.numberTemplate(Double.class,
-                                "ABS({0} - {1})",
-                                postStatistics.redVotePercentage,
-                                postStatistics.blueVotePercentage).asc()); // 박빙 순
-                break;
-            case COMPLETED:
-                query.orderBy(post.likeCount.desc()); // 좋아요 순
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported PostType: " + postType);
+        // 정렬 조건
+        if (postType != null) {
+            switch (postType) {
+                case DISCUSSING:
+                    query.orderBy(Expressions.numberTemplate(Double.class, "function('RAND')").asc()); // 랜덤 정렬
+                    break;
+                case VOTING:
+                    query.leftJoin(postStatistics).on(post.id.eq(postStatistics.post.id))
+                            .orderBy(Expressions.numberTemplate(Double.class,
+                                    "ABS({0} - {1})",
+                                    postStatistics.redVotePercentage,
+                                    postStatistics.blueVotePercentage).asc()); // 박빙 순
+                    break;
+                case COMPLETED:
+                    query.orderBy(post.likeCount.desc()); // 좋아요 순
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported PostType: " + postType);
+            }
+        } else {
+            // 타입 지정이 없는 경우 랜덤 정렬
+            query.orderBy(Expressions.numberTemplate(Double.class, "function('RAND')").asc());
         }
 
         // 결과 조회
