@@ -28,7 +28,7 @@ public interface PostService {
 
     MainPagePostResponse mainPagePost();
 
-    void delete(Long postId);
+    void delete(Long postId, Long accountId);
 
     void update(Long postId, Long accountId, UserUpdateRequest userUpdatePostDto);
 

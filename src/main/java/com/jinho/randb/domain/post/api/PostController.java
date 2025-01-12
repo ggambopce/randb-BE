@@ -120,10 +120,10 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 삭제할수 있습니다.\"}")))
     })
     @DeleteMapping("/api/user/posts/{post-id}")
-    public ResponseEntity<?> deletePost(@PathVariable("post-id") Long postId) {
+    public ResponseEntity<?> deletePost(@PathVariable("post-id") Long postId, @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principalDetails) {
         try {
             // 서비스 계층 호출
-            postService.delete(postId);
+            postService.delete(postId,principalDetails.getAccountId());
 
             // 성공 응답 반환
             return ResponseEntity.ok(new ControllerApiResponse<>(true, "게시글 삭제 성공"));

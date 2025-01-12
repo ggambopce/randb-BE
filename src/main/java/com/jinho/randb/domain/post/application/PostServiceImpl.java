@@ -128,24 +128,14 @@ public class PostServiceImpl implements PostService {
 
 
     @Override
-    public void delete(Long postId) {
-    // 현재 로그인된 사용자 정보 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof PrincipalDetails)) {
-            throw new AccessDeniedException("로그인된 사용자만 접근 가능합니다.");
-        }
+    public void delete(Long postId, Long accountId) {
 
-        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
-        String username = principalDetails.getUsername();
-
-        // 게시글 조회
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new NoSuchElementException("해당 게시물을 찾을 수 없습니다."));
-
+        // 로그인 사용자id 가져오기
+        Account account = getAccount(accountId);
+        // 토론글 조회
+        Post post = getPost(postId);
         // 작성자 확인
-        if (!post.getAccount().getUsername().equals(username)) {
-            throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");
-        }
+        validatePostOwner(account, post);
 
         // 게시글 삭제
         postRepository.delete(post);

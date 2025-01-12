@@ -1,6 +1,7 @@
 package com.jinho.randb.domain.post.domain;
 
 import com.jinho.randb.domain.account.domain.Account;
+import com.jinho.randb.domain.opinion.domain.Opinion;
 import com.jinho.randb.domain.profile.domain.Profile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -10,6 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -47,6 +50,9 @@ public class Post {
     @Enumerated(EnumType.STRING)
     @Column(name = "post_type", nullable = false)
     private PostType postType; // 상태
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Opinion> opinions = new ArrayList<>();
 
     @Column(name = "like_count", nullable = false)
     @Builder.Default
