@@ -10,6 +10,7 @@ import com.jinho.randb.domain.opinion.exception.OpinionException;
 import com.jinho.randb.domain.post.domain.Post;
 import com.jinho.randb.global.exception.ErrorResponse;
 import com.jinho.randb.global.payload.ControllerApiResponse;
+import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerErrorException;
@@ -51,7 +53,7 @@ public class OpinionController {
                             examples = @ExampleObject(value = "[{\"success\":false,\"message\":\"의견을 입력해주세요\"}, {\"success\":false,\"message\":\"회원정보나 게시글을 찾을수 없습니다.\"}]"))),
     })
     @PostMapping("/api/user/opinions")
-    public ResponseEntity<?> opinionAdd(@Valid @RequestBody AddOpinionRequest addOpinionRequest, BindingResult bindingResult){
+    public ResponseEntity<?> opinionAdd(@Valid @RequestBody AddOpinionRequest addOpinionRequest, BindingResult bindingResult,@AuthenticationPrincipal PrincipalDetails principalDetails){
 
         try {
             // 요청 유효성 검사
@@ -60,7 +62,7 @@ public class OpinionController {
             }
 
             // 의견 저장
-            opinionService.save(addOpinionRequest);
+            opinionService.save(addOpinionRequest, principalDetails.getAccountDto().getId());
 
             return ResponseEntity.ok(new ControllerApiResponse<>(true, "성공"));
         } catch (NoSuchElementException e) {

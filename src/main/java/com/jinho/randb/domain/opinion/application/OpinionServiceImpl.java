@@ -9,6 +9,10 @@ import com.jinho.randb.domain.opinion.dto.AddOpinionRequest;
 import com.jinho.randb.domain.opinion.dto.OpinionContentAndTypeDto;
 import com.jinho.randb.domain.opinion.dto.UserUpdateOpinionDto;
 import com.jinho.randb.domain.post.dao.PostRepository;
+import com.jinho.randb.domain.post.domain.Post;
+import com.jinho.randb.domain.profile.domain.Profile;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchDataException;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchErrorType;
 import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,31 +37,27 @@ public class OpinionServiceImpl implements OpinionService {
     private final PostRepository postRepository;
 
     @Override
-    public void save(AddOpinionRequest addOpinionRequest) {
-        // SecurityContextHolder에서 현재 로그인된 사용자 정보 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // Principal 객체를 안전하게 캐스팅
-        Object principal = authentication.getPrincipal();
-        if (!(principal instanceof PrincipalDetails principalDetails)) {
-            throw new IllegalStateException("인증된 사용자 정보가 PrincipalDetails 타입이 아닙니다.");
-        }
-
-        // PrincipalDetails에서 AccountDto 가져오기
-        AccountDto accountDto = principalDetails.getAccountDto();
-        Long accountId = accountDto.getId();
+    public void save(AddOpinionRequest addOpinionRequest, Long accountId) {
 
         // Account 조회
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new NoSuchElementException("계정을 찾을 수 없습니다."));
+        Account account = getAccount(accountId);
+
+        // Account에서 Profile 조회
+        Profile profile = account.getProfile();
+        if (profile == null) {
+            throw new NoSuchElementException("해당 Account에 연결된 Profile이 없습니다.");
+        }
+
+        // 게시글 조회
+        Post post = postRepository.findById(addOpinionRequest.getPostId()).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_POST));
 
         // DTO -> domain 변환
         Opinion opinion = Opinion.builder()
                 .opinionContent(addOpinionRequest.getOpinionContent())  // 의견 내용 설정
                 .opinionType(addOpinionRequest.getOpinionType())  // 카테고리 설정 (RED/BLUE)
-                .post(postRepository.findById(addOpinionRequest.getPostId())
-                        .orElseThrow(() -> new NoSuchElementException("게시글을 찾을 수 없습니다."))) // 게시글 설정
-                .account(account) // 작성자 정보 설정
+                .post(post) // 게시글 설정
+                .account(account) // 사용자 정보
+                .profile(profile) // 작성자 정보
                 .created_at(LocalDateTime.now())
                 .build();
 
@@ -90,5 +90,22 @@ public class OpinionServiceImpl implements OpinionService {
 
         opinionRepository.save(opinion);
 
+    }
+
+    /* 사용자 정보 조회 메서드*/
+    private Account getAccount(Long accountId) {
+        return accountRepository.findById(accountId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_ACCOUNT));
+    }
+
+    /* 의견 조회 메서드*/
+    private Opinion getOpinion(Long opinionId) {
+        return opinionRepository.findById(opinionId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_POST));
+    }
+
+    /* 작성자 검증 메서드*/
+    private static void validatePostOwner(Account account, Post post) { // 객체를 생성하지 않고 호출하기위한 static
+        if(!post.getAccount().getLoginId().equals(account.getLoginId())) {
+            throw new IllegalArgumentException("작성자만 수정할 수 있습니다.");
+        }
     }
 }

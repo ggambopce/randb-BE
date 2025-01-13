@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface OpinionService {
 
-    void save(AddOpinionRequest addOpinionRequest);
+    void save(AddOpinionRequest addOpinionRequest, Long accountId);
 
     Optional<Opinion> findById(Long id);
 
