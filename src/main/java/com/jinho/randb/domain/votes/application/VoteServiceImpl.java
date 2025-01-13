@@ -9,6 +9,8 @@ import com.jinho.randb.domain.votes.domain.VoteType;
 import com.jinho.randb.domain.votes.domain.Votes;
 import com.jinho.randb.domain.votes.dto.VoteRequestDto;
 import com.jinho.randb.domain.votes.dto.VoteResultDto;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchDataException;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchErrorType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class VoteServiceImpl implements VoteService {
 
     // 투표 생성
     public void saveVote(VoteRequestDto voteRequest, Long accountId) {
+
         // 중복 투표 방지
         boolean hasVoted = voteRepository.existsByPostIdAndAccountId(voteRequest.getPostId(), accountId);
         if (hasVoted) {
@@ -71,4 +74,6 @@ public class VoteServiceImpl implements VoteService {
         resultDto.setBlueVotes(blueVotes);
         return resultDto;
     }
+
+
 }
