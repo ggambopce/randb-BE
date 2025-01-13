@@ -75,21 +75,28 @@ public class OpinionServiceImpl implements OpinionService {
     }
 
     @Override
-    public void delete(Long opinionId) {
+    public void delete(Long opinionId, Long accountId) {
 
-        Opinion opinion = opinionRepository.findById(opinionId).orElseThrow(() -> new NoSuchElementException("해당 게시물을 찾을수 없습니다."));
+        // 로그인 사용자id 가져오기
+        Account account = getAccount(accountId);
+        // 의견 조회
+        Opinion opinion = opinionRepository.findById(opinionId).orElseThrow(() -> new NoSuchElementException("해당 의견을 찾을수 없습니다."));
+        // 작성자 확인
+        validatePostOwner(account, opinion);
+
         opinionRepository.deleteById(opinion.getId());
 
     }
 
     @Override
-    public void update(Long opinionId, UserUpdateOpinionDto userUpdateOpinionDto) {
-        Opinion opinion = opinionRepository.findById(opinionId).orElseThrow(() -> new NoSuchElementException("해당 게시물을 찾을수 없습니다."));
+    public void update(Long opinionId, Long accountId, UserUpdateOpinionDto userUpdateOpinionDto) {
+        Account account = getAccount(accountId);
+        Opinion opinion = opinionRepository.findById(opinionId).orElseThrow(() -> new NoSuchElementException("해당 의견을 찾을수 없습니다."));
+        validatePostOwner(account, opinion);
 
         opinion.update(userUpdateOpinionDto.getOpinionContent());
 
-        opinionRepository.save(opinion);
-
+        // 트랜잭션범위내 엔티티 변경감지로  변경 사항 자동 저장
     }
 
     /* 사용자 정보 조회 메서드*/
@@ -103,8 +110,8 @@ public class OpinionServiceImpl implements OpinionService {
     }
 
     /* 작성자 검증 메서드*/
-    private static void validatePostOwner(Account account, Post post) { // 객체를 생성하지 않고 호출하기위한 static
-        if(!post.getAccount().getLoginId().equals(account.getLoginId())) {
+    private static void validatePostOwner(Account account, Opinion opinion) { // 객체를 생성하지 않고 호출하기위한 static
+        if(!opinion.getAccount().getLoginId().equals(account.getLoginId())) {
             throw new IllegalArgumentException("작성자만 수정할 수 있습니다.");
         }
     }

@@ -22,20 +22,11 @@ public class UserUpdateOpinionDto {
     @NotBlank(message = "수정할 의견을 입력해주세요")
     private String opinionContent;
 
-    @Schema(description = "의견 id", example = "1")
-    private Long opinionId;
-
-    @Schema(hidden = true)
-    private LocalDateTime updated_at;
 
     @JsonIgnore
     @JsonCreator
-    public UserUpdateOpinionDto(@JsonProperty("opinionContent") String opinionContent,
-                             @JsonProperty("opinionId") Long opinionId,
-                             @JsonProperty("updated_at")LocalDateTime updated_at) {
+    public UserUpdateOpinionDto(@JsonProperty("opinionContent") String opinionContent) {
         this.opinionContent = opinionContent;
-        this.opinionId = opinionId;
-        this.updated_at = updated_at;
     }
     
 }

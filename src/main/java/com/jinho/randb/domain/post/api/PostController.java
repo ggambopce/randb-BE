@@ -144,7 +144,7 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 수정할 수 있습니다.\"}")))
     })
     @PostMapping("/api/user/update/posts/{post-id}")
-    public ResponseEntity<?> updatePost(@Valid @RequestBody UserUpdateRequest updatePostDto, BindingResult bindingResult, @PathVariable("post-id") Long postId, @AuthenticationPrincipal PrincipalDetails principalDetails ){
+    public ResponseEntity<?> updatePost(@Valid @RequestBody UserUpdateRequest updatePostDto, BindingResult bindingResult, @PathVariable("post-id") Long postId, @AuthenticationPrincipal PrincipalDetails principalDetails){
         if (principalDetails == null) {
             throw new UnauthorizedException("인증되지 않은 사용자입니다.");
         }

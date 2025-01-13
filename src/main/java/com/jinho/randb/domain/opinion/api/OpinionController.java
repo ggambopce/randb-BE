@@ -99,8 +99,8 @@ public class OpinionController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 삭제할수 있습니다.\"}")))
     })
     @DeleteMapping("/api/user/opinions/{opinion-id}")
-    public ResponseEntity<?> deleteOpinion(@PathVariable("opinion-id") Long opinionId){
-        opinionService.delete(opinionId);
+    public ResponseEntity<?> deleteOpinion(@PathVariable("opinion-id") Long opinionId, @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principalDetails){
+        opinionService.delete(opinionId, principalDetails.getAccountId());
         return ResponseEntity.ok(new ControllerApiResponse<>(true, "게시글 삭제 성공"));
     }
 
@@ -117,9 +117,9 @@ public class OpinionController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 수정할 수 있습니다.\"}")))
     })
     @PostMapping("/api/user/update/opinions/{opinion-id}")
-    public ResponseEntity<?> updateOpinion(@Valid @RequestBody UserUpdateOpinionDto userUpdateOpinionDto, @PathVariable("opinion-id") Long opinionId){
+    public ResponseEntity<?> updateOpinion(@Valid @RequestBody UserUpdateOpinionDto userUpdateOpinionDto, @PathVariable("opinion-id") Long opinionId, @AuthenticationPrincipal PrincipalDetails principalDetails){
 
-        opinionService.update(opinionId,userUpdateOpinionDto);
+        opinionService.update(opinionId,principalDetails.getAccountId(),userUpdateOpinionDto);
 
         return ResponseEntity.ok(new ControllerApiResponse(true,"작성 성공"));
     }

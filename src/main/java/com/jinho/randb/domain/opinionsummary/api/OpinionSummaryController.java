@@ -12,6 +12,7 @@ import com.jinho.randb.domain.post.domain.PostType;
 import com.jinho.randb.domain.post.exception.PostException;
 import com.jinho.randb.global.exception.ErrorResponse;
 import com.jinho.randb.global.payload.ControllerApiResponse;
+import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerErrorException;
@@ -61,11 +63,11 @@ public class OpinionSummaryController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"모든 값을 입력해 주세요\"}")))
     })
     @PostMapping(value = "/user/opinionSummary")
-    public ResponseEntity<?> opinionSummaryAdd(@RequestParam("postId") Long postId){
+    public ResponseEntity<?> opinionSummaryAdd(@RequestParam("postId") Long postId, @AuthenticationPrincipal PrincipalDetails principalDetails){
 
         try{
             // 의견 요약 저장 및 토론글 상태 변경
-            Map<String, String> summaries = opinionSummaryService.summarizeAndSave(postId);
+            Map<String, String> summaries = opinionSummaryService.summarizeAndSave(postId, principalDetails.getAccountDto().getId());
             postService.updatePostType(postId,PostType.VOTING);
 
             return  ResponseEntity.ok(new ControllerApiResponse<>(true,"요약글 작성 성공 및 상태 변경 완료", summaries));

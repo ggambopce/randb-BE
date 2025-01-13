@@ -17,7 +17,7 @@ public interface OpinionService {
 
     List<OpinionContentAndTypeDto> findByPostId(Long postId);
 
-    void delete(Long OpinionId);
+    void delete(Long opinionId, Long accountId);
 
-    void update(Long opinionId, UserUpdateOpinionDto userUpdateOpinionDto);
+    void update(Long opinionId, Long accountId, UserUpdateOpinionDto userUpdateOpinionDto);
 }

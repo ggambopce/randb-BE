@@ -15,7 +15,7 @@ public interface OpinionSummaryService {
      * @param postId 요약 대상이 되는 토론글 ID
      * @return RED 또는 BLUE 요약 결과
      */
-    Map<String, String> summarizeAndSave(Long postId);
+    Map<String, String> summarizeAndSave(Long postId, Long accountId);
 
     OpinionSummaryResponseDto findOpinionSummaryByPostId(Long postId);
 }
