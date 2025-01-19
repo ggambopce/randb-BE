@@ -57,9 +57,11 @@ public class S3UploadService {
 
         // UploadFile 저장
         imgRepository.save(uploadFile);
+
         // 파일을 S3에 업로드
-        try{
-            amazonS3.putObject(bucket, originalFilename, multipartFile.getInputStream(), metadata);
+        try {
+            InputStream inputStream = multipartFile.getInputStream();
+            amazonS3.putObject(new PutObjectRequest(bucket,storeFilename,inputStream,metadata).withCannedAcl(CannedAccessControlList.PublicRead));
         }catch (IOException e) {
             e.printStackTrace();
             throw new ImageException(UPLOAD_FAILS);
@@ -145,8 +147,10 @@ public class S3UploadService {
             throw new ImageException(INVALID_IMAGE_FORMAT);
         }
 
+        // 폴더 경로 설정
+        String folderPath = "randb/";
         String uuid = UUID.randomUUID().toString();
-        return uuid+"."+extension;
+        return folderPath + uuid + "." + extension;
     }
 }
 

@@ -46,14 +46,14 @@ public class Account {
     private boolean verified;
 
     @Builder.Default
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL,orphanRemoval = true)
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<Post> posts = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL,orphanRemoval = true)
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<Opinion> opinions = new ArrayList<>();
 
-    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Profile profile;
 
     public List<String> getRoleList() {

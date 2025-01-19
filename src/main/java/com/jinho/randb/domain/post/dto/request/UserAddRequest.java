@@ -1,19 +1,13 @@
 package com.jinho.randb.domain.post.dto.request;
 
-import com.jinho.randb.domain.account.domain.Account;
-import com.jinho.randb.domain.post.domain.Post;
-import com.jinho.randb.domain.post.domain.PostType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class UserAddRequest {
 

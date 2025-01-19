@@ -44,7 +44,6 @@ public class JoinRequest { // 컨트롤러 요청 객체
         return AccountDto.builder()
                 .username(joinRequest.getUsername())
                 .password(joinRequest.getPassword())
-                .passwordRe(joinRequest.getPasswordRe())
                 .loginId(joinRequest.getLoginId())
                 .code(joinRequest.getCode())
                 .email(joinRequest.getEmail()).build();

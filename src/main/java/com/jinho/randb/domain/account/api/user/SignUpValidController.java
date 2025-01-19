@@ -45,12 +45,12 @@ public class SignUpValidController {
     })
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@Valid @RequestBody JoinRequest joinRequest, BindingResult bindingResult) {
-        boolean validationOfSignUp = signUpService.ValidationOfSignUp(JoinRequest.fromDto(joinRequest));
-
-        if (!validationOfSignUp || bindingResult.hasErrors()){
-            Map<String, String> map = signUpService.ValidationErrorMessage(JoinRequest.fromDto(joinRequest));
-            return getErrorResponseResponse(bindingResult,map);
-        }
+//        boolean validationOfSignUp = signUpService.ValidationOfSignUp(JoinRequest.fromDto(joinRequest));
+//
+//        if (!validationOfSignUp || bindingResult.hasErrors()){
+//            Map<String, String> map = signUpService.ValidationErrorMessage(JoinRequest.fromDto(joinRequest));
+//            return getErrorResponseResponse(bindingResult,map);
+//        }
 
         // 유효성 검증 통과 시 서비스 로직 실행
         signUpService.joinAccount(JoinRequest.fromDto(joinRequest));
