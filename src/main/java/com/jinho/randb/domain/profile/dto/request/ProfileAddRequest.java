@@ -1,5 +1,6 @@
 package com.jinho.randb.domain.profile.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jinho.randb.domain.account.domain.Account;
 import com.jinho.randb.domain.profile.domain.Gender;
 import com.jinho.randb.domain.profile.domain.Profile;
@@ -28,17 +29,21 @@ public class ProfileAddRequest {
 
     @NotNull(message = "생년월일은 필수 입력값입니다.")
     @Past(message = "생년월일은 과거 날짜여야 합니다.")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") // 날짜 포맷 지정
     private LocalDate age;
 
     @Size(max = 500, message = "자기소개는 500자 이내로 작성해주세요.")
     private String bio;
 
+    @Size(max = 255, message = "Instagram URL은 255자 이내여야 합니다.")
     @Pattern(regexp = "^(https?://)?(www\\.)?instagram\\.com/.*$", message = "유효한 Instagram URL을 입력해주세요.")
     private String instagramUrl;
 
+    @Size(max = 255, message = "Instagram URL은 255자 이내여야 합니다.")
     @Pattern(regexp = "^(https?://)?(www\\.)?blog\\.com/.*$", message = "유효한 Blog URL을 입력해주세요.")
     private String blogUrl;
 
+    @Size(max = 255, message = "Instagram URL은 255자 이내여야 합니다.")
     @Pattern(regexp = "^(https?://)?(www\\.)?youtube\\.com/.*$", message = "유효한 YouTube URL을 입력해주세요.")
     private String youtubeUrl;
 

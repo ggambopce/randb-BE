@@ -61,7 +61,7 @@ public class S3UploadService {
         // 파일을 S3에 업로드
         try {
             InputStream inputStream = multipartFile.getInputStream();
-            amazonS3.putObject(new PutObjectRequest(bucket,storeFilename,inputStream,metadata).withCannedAcl(CannedAccessControlList.PublicRead));
+            amazonS3.putObject(new PutObjectRequest(bucket,storeFilename,inputStream,metadata));
         }catch (IOException e) {
             e.printStackTrace();
             throw new ImageException(UPLOAD_FAILS);

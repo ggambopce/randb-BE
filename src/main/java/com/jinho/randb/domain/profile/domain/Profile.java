@@ -25,7 +25,7 @@ public class Profile {
     @Column(name = "profile_id")
     private Long id;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", unique = true)
     private String nickname; // 별명
 
     @Column(name = "gender")

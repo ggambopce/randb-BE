@@ -49,7 +49,7 @@ public class ProfileDto {
     private String profileImgUrl; // 프로필 이미지 Url
 
 
-    public static ProfileDto of(Profile profile) {
+    public static ProfileDto of(Profile profile, String imgUrl) {
         return ProfileDto.builder()
                 .id(profile.getId())
                 .nickname(profile.getNickname())
@@ -60,6 +60,7 @@ public class ProfileDto {
                 .blogUrl(profile.getBlogUrl())
                 .youtubeUrl(profile.getYoutubeUrl())
                 .account(AccountDto.of(profile.getAccount()))
+                .profileImgUrl(imgUrl)
                 .build();
     }
 

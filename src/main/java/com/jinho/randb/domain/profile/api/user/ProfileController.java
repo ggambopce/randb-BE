@@ -26,7 +26,7 @@ public class ProfileController {
     private final S3UploadService s3UploadService;
 
     @PostMapping(value = "/user/profiles", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> createProfile(@Valid @RequestPart(value = "profileAddRequest") ProfileAddRequest profileAddRequest, @RequestPart(value = "multipartFile") MultipartFile multipartFile, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public ResponseEntity<?> createProfile(@RequestPart(value = "profileAddRequest") ProfileAddRequest profileAddRequest, @RequestPart(value = "multipartFile", required = false) MultipartFile multipartFile, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         profileService.save(profileAddRequest, principalDetails.getAccountId(), multipartFile);
         return ResponseEntity.ok(new ControllerApiResponse(true,"작성 성공"));
     }
@@ -38,7 +38,7 @@ public class ProfileController {
     }
 
     @PostMapping(value = "/user/update/profiles/{profileId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateProfile(@Valid @RequestPart ProfileUpdateRequest profileUpdateRequest, @RequestPart(required = false) List<MultipartFile> multipartFile, @PathVariable("profileId") Long profileId, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public ResponseEntity<?> updateProfile(@RequestPart ProfileUpdateRequest profileUpdateRequest, @RequestPart(required = false) List<MultipartFile> multipartFile, @PathVariable("profileId") Long profileId, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         profileService.update(profileId, principalDetails.getAccountId(), profileUpdateRequest, multipartFile);
         return ResponseEntity.ok(new ControllerApiResponse(true,"수정 성공"));
     }

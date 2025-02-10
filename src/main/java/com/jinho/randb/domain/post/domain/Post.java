@@ -2,7 +2,9 @@ package com.jinho.randb.domain.post.domain;
 
 import com.jinho.randb.domain.account.domain.Account;
 import com.jinho.randb.domain.opinion.domain.Opinion;
+import com.jinho.randb.domain.opinionsummary.domain.OpinionSummary;
 import com.jinho.randb.domain.profile.domain.Profile;
+import com.jinho.randb.domain.votes.domain.Votes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -53,6 +55,15 @@ public class Post {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Opinion> opinions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OpinionSummary> opinionSummaries = new ArrayList<>();
+
+    @OneToOne(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private PostStatistics postStatistics;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Votes> votes;
 
     @Column(name = "like_count", nullable = false)
     @Builder.Default
