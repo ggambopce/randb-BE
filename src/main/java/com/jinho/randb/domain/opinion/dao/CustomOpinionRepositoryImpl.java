@@ -20,7 +20,7 @@ public class CustomOpinionRepositoryImpl implements CustomOpinionRepository {
     @Override
     public List<OpinionContentAndTypeDto> findByPostId(Long postId) {
         List<Tuple> list = queryFactory
-                .select(opinion.id, opinion.opinionContent, opinion.opinionType, profile.nickname, opinion.created_at, opinion.updated_at)
+                .select(opinion.id, opinion.opinionContent, opinion.opinionType, profile.nickname, profile.id, opinion.created_at, opinion.updated_at)
                 .from(opinion)
                 .join(opinion.account, account) // opinion -> account 조인
                 .join(account.profile, profile) // account -> profile 조인
@@ -32,6 +32,7 @@ public class CustomOpinionRepositoryImpl implements CustomOpinionRepository {
                         .id(tuple.get(opinion.id))
                         .opinionContent(tuple.get(opinion.opinionContent))
                         .nickname(tuple.get(profile.nickname))
+                        .profileId(tuple.get(profile.id))
                         .opinionType(tuple.get(opinion.opinionType))
                         .create_at(tuple.get(opinion.created_at))  // 등록일
                         .updated_at(tuple.get(opinion.updated_at)) // 수정일

@@ -112,6 +112,7 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
                         tuple.get(post.postTitle),
                         tuple.get(post.postContent),
                         tuple.get(account.username),
+                        tuple.get(account.profile.id),
                         tuple.get(post.postType),
                         tuple.get(post.likeCount)
                 ))

@@ -25,6 +25,8 @@ public class OpinionContentAndTypeDto {
     @Schema(description = "작성자 이름", example = "홍길동")
     private String nickname;
 
+    private Long profileId;
+
     private OpinionType opinionType;
 
     private LocalDateTime create_at;        //등록일
@@ -38,6 +40,7 @@ public class OpinionContentAndTypeDto {
                 .id(opinion.getId())
                 .opinionContent(opinion.getOpinionContent())
                 .nickname(opinion.getProfile().getNickname())
+                .profileId(opinion.getProfile().getId())
                 .opinionType(opinion.getOpinionType())
                 .create_at(opinion.getCreated_at())
                 .updated_at(opinion.getUpdated_at())
