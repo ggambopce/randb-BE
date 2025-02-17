@@ -4,7 +4,6 @@ import com.jinho.randb.domain.account.application.user.SignUpService;
 import com.jinho.randb.domain.account.dto.request.EmailValidRequest;
 import com.jinho.randb.domain.account.dto.request.JoinRequest;
 import com.jinho.randb.domain.account.dto.request.LoginIdValidRequest;
-import com.jinho.randb.domain.account.dto.request.NicknameValidRequest;
 import com.jinho.randb.global.exception.ErrorResponse;
 import com.jinho.randb.global.payload.ControllerApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,12 +45,12 @@ public class SignUpValidController {
     })
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@Valid @RequestBody JoinRequest joinRequest, BindingResult bindingResult) {
-        boolean validationOfSignUp = signUpService.ValidationOfSignUp(JoinRequest.fromDto(joinRequest));
-
-        if (!validationOfSignUp || bindingResult.hasErrors()){
-            Map<String, String> map = signUpService.ValidationErrorMessage(JoinRequest.fromDto(joinRequest));
-            return getErrorResponseResponse(bindingResult,map);
-        }
+//        boolean validationOfSignUp = signUpService.ValidationOfSignUp(JoinRequest.fromDto(joinRequest));
+//
+//        if (!validationOfSignUp || bindingResult.hasErrors()){
+//            Map<String, String> map = signUpService.ValidationErrorMessage(JoinRequest.fromDto(joinRequest));
+//            return getErrorResponseResponse(bindingResult,map);
+//        }
 
         // 유효성 검증 통과 시 서비스 로직 실행
         signUpService.joinAccount(JoinRequest.fromDto(joinRequest));
@@ -91,23 +89,6 @@ public class SignUpValidController {
         Map<String, Boolean> stringBooleanMap = signUpService.emailValid(emailValidRequest.getEmail());
         return ResponseEntity.ok(new ControllerApiResponse<>(true,"이메일 사용 가능",stringBooleanMap));
     }
-
-    @Operation(summary = "닉네임 검증",description = "닉네임이 대소문자, 한글, 숫자로 이뤄진 4글자 이상이어야 하며 중복 여부도 검증가능. (true = 사용 가능, false = 사용 불가능)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OK",
-                    content = @Content(schema = @Schema(implementation = ControllerApiResponse.class),
-                            examples = @ExampleObject(value = "{\"success\":true,\"message\":\"닉네임 사용 가능\"}"))),
-            @ApiResponse(responseCode = "400", description = "BAD REQUEST",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(value = "{\"success\":true,\"message\":\"사용 불가능한 닉네임 입니다.\"}")))
-    })
-    @PostMapping("/join/nickname/validation")
-    public ResponseEntity<?> nickName(@RequestBody NicknameValidRequest nicknameValidRequest){
-        signUpService.nickNameValid(nicknameValidRequest.getNickname());
-        return ResponseEntity.ok(new ControllerApiResponse<>(true,"닉네임 사용 가능"));
-    }
-
-
 
     private static ResponseEntity<ErrorResponse<Map<String, String>>> getErrorResponseResponse(BindingResult bindingResult,Map<String, String> map) {
         Map<String, String> result = new LinkedHashMap<>();

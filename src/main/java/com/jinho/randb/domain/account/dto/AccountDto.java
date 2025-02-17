@@ -27,8 +27,6 @@ public class AccountDto { // 내부 로직 사용 객체
 
     private String username;
 
-    private String nickname;
-
     private String password;
 
     private String passwordRe;
@@ -60,7 +58,6 @@ public class AccountDto { // 내부 로직 사용 객체
                 .password(accountDto.getPassword())
                 .email(accountDto.getEmail())
                 .createAt(LocalDate.now())
-                .nickname(accountDto.getNickname())
                 .username(accountDto.getUsername())
                 .createAt(accountDto.getJoin_date())
                 .roles("ROLE_USER")
@@ -74,7 +71,6 @@ public class AccountDto { // 내부 로직 사용 객체
         this.loginId = loginId;
         this.email = email;
         this.username = username;
-        this.nickname = nickname;
         this.join_date = join_date;
     }
 
@@ -83,7 +79,6 @@ public class AccountDto { // 내부 로직 사용 객체
                 .id(account.getId())
                 .loginId(account.getLoginId())
                 .username(account.getUsername())
-                .nickname(account.getNickname())
                 .password(account.getPassword())
                 .email(account.getEmail())
                 .roles(account.getRoles())
@@ -103,7 +98,6 @@ public class AccountDto { // 내부 로직 사용 객체
                 .id(account.getId())
                 .loginId(account.getLoginId())
                 .username(account.getUsername())
-                .nickname(account.getNickname())
                 .email(account.getEmail())
                 .build();
     }

@@ -3,11 +3,14 @@ package com.jinho.randb.domain.opinion.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jinho.randb.domain.account.domain.Account;
 import com.jinho.randb.domain.post.domain.Post;
+import com.jinho.randb.domain.profile.domain.Profile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Builder
@@ -44,6 +47,10 @@ public class Opinion {
     @Schema(hidden = true)
     @JoinColumn(name = "post_id")
     private Post post;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id")
+    private Profile profile; // 작성자의 프로필 정보
 
     @JsonIgnore
     public LocalDateTime getLocDateTime(){

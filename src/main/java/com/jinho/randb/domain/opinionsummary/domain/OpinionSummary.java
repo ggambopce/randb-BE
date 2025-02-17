@@ -36,7 +36,7 @@ public class OpinionSummary {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @Schema(hidden = true)
-    @JoinColumn(name= "post_id")
+    @JoinColumn(name= "post_id", nullable = false)
     private Post post;
 
     @JsonIgnore

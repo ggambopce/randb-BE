@@ -1,6 +1,7 @@
 package com.jinho.randb.global.jwt.entity;
 
 import com.jinho.randb.domain.account.domain.Account;
+import com.jinho.randb.domain.profile.domain.Profile;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,4 +29,8 @@ public class RefreshToken {
     private Account account;
 
     private LocalDateTime tokenTime;
+
+    @OneToOne
+    @JoinColumn(name = "profile_id")
+    private Profile profile;
 }

@@ -11,6 +11,7 @@ import com.jinho.randb.domain.post.dto.response.*;
 import com.jinho.randb.domain.post.exception.PostException;
 import com.jinho.randb.global.exception.ErrorResponse;
 import com.jinho.randb.global.exception.ex.BadRequestException;
+import com.jinho.randb.global.exception.ex.UnauthorizedException;
 import com.jinho.randb.global.payload.ControllerApiResponse;
 import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -57,7 +58,7 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"모든 값을 입력해 주세요\"}")))
     })
     @PostMapping(value = "/api/user/posts")
-    public ResponseEntity<?> postAdd(@Valid @RequestBody UserAddRequest userAddPostDto, BindingResult bindingResult, @AuthenticationPrincipal PrincipalDetails principalDetails){
+    public ResponseEntity<?> postAdd(@Valid @RequestBody UserAddRequest userAddRequest, BindingResult bindingResult, @AuthenticationPrincipal PrincipalDetails principalDetails){
 
         try{
             // 요청 유효성 검사
@@ -65,7 +66,7 @@ public class PostController {
             if (errorMap != null) return errorMap;
 
             // 게시글 저장
-            postService.save(userAddPostDto, principalDetails.getAccountDto().getId());
+            postService.save(userAddRequest, principalDetails.getAccountDto().getId());
 
             return ResponseEntity.ok(new ControllerApiResponse(true, "작성 성공"));
         } catch (NoSuchElementException e) {
@@ -119,10 +120,10 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 삭제할수 있습니다.\"}")))
     })
     @DeleteMapping("/api/user/posts/{post-id}")
-    public ResponseEntity<?> deletePost(@PathVariable("post-id") Long postId) {
+    public ResponseEntity<?> deletePost(@PathVariable("post-id") Long postId, @Parameter(hidden = true) @AuthenticationPrincipal PrincipalDetails principalDetails) {
         try {
             // 서비스 계층 호출
-            postService.delete(postId);
+            postService.delete(postId,principalDetails.getAccountId());
 
             // 성공 응답 반환
             return ResponseEntity.ok(new ControllerApiResponse<>(true, "게시글 삭제 성공"));
@@ -143,7 +144,10 @@ public class PostController {
                             examples = @ExampleObject(value = "{\"success\": false, \"message\" : \"작성자만 수정할 수 있습니다.\"}")))
     })
     @PostMapping("/api/user/update/posts/{post-id}")
-    public ResponseEntity<?> updatePost(@Valid @RequestBody UserUpdateRequest updatePostDto, BindingResult bindingResult, @PathVariable("post-id") Long postId){
+    public ResponseEntity<?> updatePost(@Valid @RequestBody UserUpdateRequest updatePostDto, BindingResult bindingResult, @PathVariable("post-id") Long postId, @AuthenticationPrincipal PrincipalDetails principalDetails){
+        if (principalDetails == null) {
+            throw new UnauthorizedException("인증되지 않은 사용자입니다.");
+        }
 
         try {
             // 유효성 검사
@@ -151,7 +155,7 @@ public class PostController {
             if (errorMap != null) return errorMap;
 
             // 서비스 호출: 게시글 수정
-            postService.update(postId, updatePostDto);
+            postService.update(postId, principalDetails.getAccountId(), updatePostDto);
 
             // 성공 응답 반환
             return ResponseEntity.ok(new ControllerApiResponse(true, "토론글 수정 성공"));
@@ -207,8 +211,8 @@ public class PostController {
 
 
     @Operation(
-            summary = "전체 토론글 조회 API",
-            description = "토론글의 전체 목록을 조회할 수 있습니다.(무한페이징)",
+            summary = "토론글 검색(무한 스크롤)",
+            description = "토론글의 타입에 따라 검색어로 조회할 수 있습니다.(무한페이징)",
             tags = {"일반 사용자 토론글 컨트롤러"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OK",
@@ -218,10 +222,13 @@ public class PostController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples =  @ExampleObject(value = "{\"success\": false, \"message\": \"잘못된 요청입니다.\"}")))
     })
-    @GetMapping("/api/posts")
-    public ResponseEntity<?> findAllPost(@RequestParam(value = "postId", required = false) Long postId, Pageable pageable) {
-        PostResponse postResponse = postService.postPage(postId, pageable);
-        return ResponseEntity.ok(new ControllerApiResponse<>(true, "조회성공", postResponse));
+    @GetMapping("/api/posts/search")
+    public ResponseEntity<?> searchPosts(@RequestParam(value = "postId", required = false) Long postId,
+                                         @RequestParam(value = "searchKeyword", required = false) String searchKeyword,
+                                         @RequestParam(value = "postType", required = false) PostType postType,
+                                         Pageable pageable) {
+        PostSearchResponse postSearchResponse = postService.searchPost(searchKeyword, postType, postId, pageable);
+        return ResponseEntity.ok(new ControllerApiResponse<>(true, "조회성공", postSearchResponse));
     }
 
 

@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import static com.jinho.randb.domain.account.domain.QAccount.account;
 import static com.jinho.randb.domain.opinion.domain.QOpinion.opinion;
+import static com.jinho.randb.domain.profile.domain.QProfile.profile;
 
 @RequiredArgsConstructor
 public class CustomOpinionRepositoryImpl implements CustomOpinionRepository {
@@ -19,9 +20,10 @@ public class CustomOpinionRepositoryImpl implements CustomOpinionRepository {
     @Override
     public List<OpinionContentAndTypeDto> findByPostId(Long postId) {
         List<Tuple> list = queryFactory
-                .select(opinion.id, opinion.opinionContent, opinion.opinionType, account.username, opinion.created_at, opinion.updated_at)
+                .select(opinion.id, opinion.opinionContent, opinion.opinionType, profile.nickname, profile.id, opinion.created_at, opinion.updated_at)
                 .from(opinion)
-                .join(opinion.account, account)
+                .join(opinion.account, account) // opinion -> account 조인
+                .join(account.profile, profile) // account -> profile 조인
                 .where(opinion.post.id.eq(postId))
                 .fetch();
 
@@ -29,7 +31,8 @@ public class CustomOpinionRepositoryImpl implements CustomOpinionRepository {
                 .map(tuple -> OpinionContentAndTypeDto.builder()
                         .id(tuple.get(opinion.id))
                         .opinionContent(tuple.get(opinion.opinionContent))
-                        .username(tuple.get(account.username))
+                        .nickname(tuple.get(profile.nickname))
+                        .profileId(tuple.get(profile.id))
                         .opinionType(tuple.get(opinion.opinionType))
                         .create_at(tuple.get(opinion.created_at))  // 등록일
                         .updated_at(tuple.get(opinion.updated_at)) // 수정일

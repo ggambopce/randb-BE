@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -22,6 +24,9 @@ public class Profile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "profile_id")
     private Long id;
+
+    @Column(name = "nickname", unique = true)
+    private String nickname; // 별명
 
     @Column(name = "gender")
     private Gender gender; // 성별
@@ -45,11 +50,13 @@ public class Profile {
     @Column(name = "youtube_url")
     private String youtubeUrl; // 유튜브 URL
 
-    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
-    private UploadFile profileImage;
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UploadFile> uploadFiles = new ArrayList<>();
 
-    public static Profile createProfile(Gender gender, LocalDate age, String bio, String instagramUrl, String blogUrl, String youtubeUrl) {
+    public static Profile createProfile(String nickname,Gender gender, LocalDate age, String bio, String instagramUrl, String blogUrl, String youtubeUrl) {
         return Profile.builder()
+                .nickname(nickname)
                 .gender(gender)
                 .age(age)
                 .bio(bio)
@@ -59,13 +66,25 @@ public class Profile {
                 .build();
     }
 
-    public void updateProfile(Gender gender, LocalDate age, String bio, String instagramUrl, String blogUrl, String youtubeUrl) {
+    public void updateProfile(String nickname, Gender gender, LocalDate age, String bio, String instagramUrl, String blogUrl, String youtubeUrl) {
+        this.nickname = nickname;
         this.gender = gender;
         this.age = age;
         this.bio = bio;
         this.instagramUrl = instagramUrl;
         this.blogUrl = blogUrl;
         this.youtubeUrl = youtubeUrl;
+    }
+
+    // 연관 관계 설정 메서드
+    public void addUploadFile(UploadFile uploadFile) {
+        this.uploadFiles.add(uploadFile);
+        uploadFile.setProfile(this);
+    }
+    // 연관 관계 제거 메서드
+    public void removeUploadFile(UploadFile uploadFile) {
+        this.uploadFiles.remove(uploadFile);
+        uploadFile.setProfile(null);
     }
 
 

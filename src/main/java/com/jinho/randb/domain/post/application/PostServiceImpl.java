@@ -2,7 +2,6 @@ package com.jinho.randb.domain.post.application;
 
 import com.jinho.randb.domain.account.dao.AccountRepository;
 import com.jinho.randb.domain.account.domain.Account;
-import com.jinho.randb.domain.account.dto.AccountDto;
 import com.jinho.randb.domain.post.dao.PostRepository;
 import com.jinho.randb.domain.post.dao.PostStatisticsRepository;
 import com.jinho.randb.domain.post.domain.Post;
@@ -12,20 +11,26 @@ import com.jinho.randb.domain.post.dto.PostDto;
 import com.jinho.randb.domain.post.dto.PostStatisticsResponseDto;
 import com.jinho.randb.domain.post.dto.request.UserAddRequest;
 import com.jinho.randb.domain.post.dto.request.UserUpdateRequest;
-import com.jinho.randb.domain.post.dto.response.*;
+import com.jinho.randb.domain.post.dto.response.MainPagePostResponse;
+import com.jinho.randb.domain.post.dto.response.PostDetailResponse;
+import com.jinho.randb.domain.post.dto.response.PostResponse;
+import com.jinho.randb.domain.post.dto.response.PostSearchResponse;
+import com.jinho.randb.domain.profile.domain.Profile;
 import com.jinho.randb.domain.votes.dao.VoteRepository;
 import com.jinho.randb.domain.votes.domain.VoteType;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchDataException;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchErrorType;
 import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,17 +51,22 @@ public class PostServiceImpl implements PostService {
     public void save(UserAddRequest userAddRequest, Long accountId) {
 
         // Account 조회
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new NoSuchElementException("계정을 찾을 수 없습니다."));
+        Account account = getAccount(accountId);
+
+        // Account에서 Profile 조회
+        Profile profile = account.getProfile();
+        if (profile == null) {
+            throw new NoSuchElementException("해당 Account에 연결된 Profile이 없습니다.");
+        }
 
         // DTO -> domain 변환
-        Post post = Post.builder()
-                .postTitle(userAddRequest.getPostTitle())
-                .postContent(userAddRequest.getPostContent())
-                .account(account) // 작성자 정보 설정
-                .type(PostType.DISCUSSING) // 기본상태를 DISCUSSING으로 설정
-                .createdAt(LocalDateTime.now())
-                .build();
+        Post post = Post.createPost(
+                userAddRequest.getPostTitle(),
+                userAddRequest.getPostContent(),
+                profile, // 작성자 별명
+                account, // 사용자 정보
+                PostType.DISCUSSING // 기본 상태 설정
+        );
 
         postRepository.save(post);
     }
@@ -74,8 +84,8 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public PostDetailResponse getPostDetail(Long postId) {
-        PostDto postDetail = postRepository.getPostDetail(postId);
-        return PostDetailResponse.of(postDetail.toDto());
+        PostDto postDto = postRepository.getPostDetail(postId);
+        return new PostDetailResponse(postDto);
     }
 
     /**
@@ -95,16 +105,18 @@ public class PostServiceImpl implements PostService {
 
 
     /**
-     * 토론글을  전제조회하는 로직(무한페이징),
-     * @param postId  찾을 토론글 번호
-     * @return Response로 변환해 해당 토론글 전체목록을 반환
+     * 토론글 검색 로직(무한페이징)
+     * @param postId 찾을 토론글 번호
+     * @param searchKeyword 검색 키워드
+     * @param postType 게시글 유형
+     * @return PostSearchResponse 변환해 해당 토론글 전체 목록 반환
      */
     @Override
-    public PostResponse postPage(Long postId, Pageable pageable) {
+    public PostSearchResponse searchPost(String searchKeyword, PostType postType, Long postId, Pageable pageable) {
 
-        Slice<PostDto> allPost = postRepository.getAllPost(postId, pageable);
+        Slice<PostDto> postDtoSlice = postRepository.searchPosts( searchKeyword, postType, postId, pageable);
         // 다음 페이지 여부 및 현재 페이지 데이터를 `PostResponse`로 반환
-        return new PostResponse(allPost.hasNext(),allPost.getContent());
+        return new PostSearchResponse(postDtoSlice.hasNext(),postDtoSlice.getContent());
     }
 
     @Override
@@ -116,55 +128,30 @@ public class PostServiceImpl implements PostService {
 
 
     @Override
-    public void delete(Long postId) {
-    // 현재 로그인된 사용자 정보 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof PrincipalDetails)) {
-            throw new AccessDeniedException("로그인된 사용자만 접근 가능합니다.");
-        }
+    public void delete(Long postId, Long accountId) {
 
-        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
-        String username = principalDetails.getUsername();
-
-        // 게시글 조회
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new NoSuchElementException("해당 게시물을 찾을 수 없습니다."));
-
+        // 로그인 사용자id 가져오기
+        Account account = getAccount(accountId);
+        // 토론글 조회
+        Post post = getPost(postId);
         // 작성자 확인
-        if (!post.getAccount().getUsername().equals(username)) {
-            throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");
-        }
+        validatePostOwner(account, post);
 
         // 게시글 삭제
         postRepository.delete(post);
     }
 
     @Override
-    public void update(Long postId, UserUpdateRequest userUpdatePostDto) {
+    public void update(Long postId, Long accountId, UserUpdateRequest userUpdatePostDto) {
 
-        // 게시글 조회
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new NoSuchElementException("해당 게시물을 찾을 수 없습니다."));
-
-        // 현재 로그인된 사용자 정보 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof PrincipalDetails)) {
-            throw new AccessDeniedException("로그인된 사용자만 접근 가능합니다.");
-        }
-
-        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
-        String username = principalDetails.getUsername();
-
-        // 작성자 검증
-        if (!post.getAccount().getUsername().equals(username)) {
-            throw new AccessDeniedException("작성자만 수정 가능합니다.");
-        }
+        Account account = getAccount(accountId);
+        Post post = getPost(postId);
+        validatePostOwner(account, post);
 
         // 게시글 수정
         post.update(userUpdatePostDto.getPostTitle(), userUpdatePostDto.getPostContent());
 
-        // 변경 사항 저장
-        postRepository.save(post);
+        // 트랜잭션범위내 엔티티 변경감지로  변경 사항 자동 저장
     }
 
     @Override
@@ -185,8 +172,6 @@ public class PostServiceImpl implements PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NoSuchElementException("해당 게시글을 찾을 수 없습니다."));
 
-
-        post.setCompletedAt(LocalDateTime.now());
         postRepository.save(post);
 
         // 투표 수 계산
@@ -243,4 +228,20 @@ public class PostServiceImpl implements PostService {
     }
 
 
+    /* 사용자 정보 조회 메서드*/
+    private Account getAccount(Long accountId) {
+        return accountRepository.findById(accountId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_ACCOUNT));
+    }
+
+    /* 게시글 조회 메서드*/
+    private Post getPost(Long postId) {
+        return postRepository.findById(postId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_POST));
+    }
+
+    /* 작성자 검증 메서드*/
+    private static void validatePostOwner(Account account, Post post) { // 객체를 생성하지 않고 호출하기위한 static
+        if(!post.getAccount().getLoginId().equals(account.getLoginId())) {
+            throw new IllegalArgumentException("작성자만 수정할 수 있습니다.");
+        }
+    }
 }

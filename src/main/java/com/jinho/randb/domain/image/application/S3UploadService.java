@@ -18,11 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.jinho.randb.global.exception.ex.img.ImageErrorType.INVALID_IMAGE_FORMAT;
-import static com.jinho.randb.global.exception.ex.img.ImageErrorType.UPLOAD_FAILS;
+import static com.jinho.randb.global.exception.ex.img.ImageErrorType.*;
 
 @Service
 @Transactional
@@ -38,6 +38,10 @@ public class S3UploadService {
 
     public String uploadFile(MultipartFile multipartFile, Profile profile){
 
+        if (multipartFile==null){
+            throw new ImageException(MISSING_PRIMARY_IMAGE);
+        }
+
         // 원본 파일명과 저장될 파일명 생성
         String originalFilename = multipartFile.getOriginalFilename();
         String storeFilename = createStoreFile(originalFilename);
@@ -49,13 +53,15 @@ public class S3UploadService {
 
         // UploadFile 엔티티 생성 및 Profile과 연관 설정
         UploadFile uploadFile = UploadFile.createUploadFile(originalFilename, storeFilename);
-        uploadFile.setProfile(profile); // Profile과 연관 설정
+        profile.addUploadFile(uploadFile); // Profile과 UploadFile 간의 연관 관계 설정
 
         // UploadFile 저장
         imgRepository.save(uploadFile);
+
         // 파일을 S3에 업로드
-        try{
-            amazonS3.putObject(bucket, originalFilename, multipartFile.getInputStream(), metadata);
+        try {
+            InputStream inputStream = multipartFile.getInputStream();
+            amazonS3.putObject(new PutObjectRequest(bucket,storeFilename,inputStream,metadata));
         }catch (IOException e) {
             e.printStackTrace();
             throw new ImageException(UPLOAD_FAILS);
@@ -69,49 +75,54 @@ public class S3UploadService {
      * AWS S3는 덮어쓰는방식은 지원되지 않으므로 삭제후 재 업로드
      * 연관관계 및 이름 재설정
      */
-    public void updateFile(String existingFileName, MultipartFile newFile, Profile profile) {
+    public void updateFile(List<MultipartFile> newFiles, Profile profile) {
 
-        // 기존 파일 삭제
-        if (existingFileName != null && !existingFileName.isEmpty()) {
-            deleteFile(existingFileName);
+        // 기존 파일 삭제 및 업로드
+        List<UploadFile> existingFiles = profile.getUploadFiles();
+
+        // 새로운 파일 업로드 및 Profile 연관 설정
+        for (MultipartFile newFile : newFiles) {
+            // 기존 파일 삭제 로직 (파일명이 겹치는 경우 삭제)
+            existingFiles.stream()
+                    .filter(file -> file.getOriginFileName().equals(newFile.getOriginalFilename()))
+                    .findFirst()
+                    .ifPresent(existingFile -> {
+                        deleteFile(existingFile.getStoreFileName());
+                        imgRepository.delete(existingFile); // DB에서 삭제
+                    });
+
+            // 새로운 파일 업로드
+            String newStoreFileName = uploadFile(newFile, profile);
+
+            // UploadFile 생성 및 Profile 연관 설정
+            UploadFile uploadFile = UploadFile.createUploadFile(newFile.getOriginalFilename(), newStoreFileName);
+            profile.addUploadFile(uploadFile); // Profile에 추가
         }
-        // 새로운 파일 업로드
-        String newFileUrl = uploadFile(newFile, profile);
 
-        // Profile에서 연관된 UploadFile 가져오기
-        UploadFile uploadFile = profile.getProfileImage();
-        if (uploadFile == null) {
-            // 연관된 파일이 없는 경우 새로 생성
-            uploadFile = UploadFile.createUploadFile(newFile.getOriginalFilename(), newFileUrl);
-            uploadFile.setProfile(profile);
-        } else {
-            // 기존 파일 업데이트
-            uploadFile.update(newFile.getOriginalFilename(), newFileUrl);
-        }
-
-        imgRepository.save(uploadFile);
-
+        // 변경된 파일 정보 저장
+        profileRepository.save(profile);
     }
     /**
      * 프로필 이미지 삭제 메서드
      * @param profile 프로필 객체
      */
-    public void deleteProfileImage(Long profileId) {
+    public void deleteProfileImage(Long profileId, Long fileId) {
         // 프로필 조회
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new IllegalArgumentException("프로필이 존재하지 않습니다."));
-        // 프로필에 연관된 파일 가져오기
-        UploadFile uploadFile = profile.getProfileImage();
+
+        // 프로필에 연관된 파일 리스트에서 파일 조회
+        UploadFile uploadFile = profile.getUploadFiles().stream()
+                .filter(file -> file.getId().equals(fileId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
 
         // S3에서 파일 삭제
-        if (uploadFile != null) {
-            String storeFileName = uploadFile.getStoreFileName();
-            deleteFile(storeFileName);
+        deleteFile(uploadFile.getStoreFileName());
 
-            // 데이터베이스에서 연관 정보 삭제
-            profile.setProfileImage(null); // 프로필과의 연관관계 제거
-            imgRepository.delete(uploadFile); // UploadFile 엔티티 삭제
-        }
+        // 데이터베이스에서 연관 정보 삭제
+        profile.removeUploadFile(uploadFile); // Profile과의 연관 관계 제거
+        imgRepository.delete(uploadFile); // UploadFile 엔티티 삭제
     }
 
     /**
@@ -136,8 +147,10 @@ public class S3UploadService {
             throw new ImageException(INVALID_IMAGE_FORMAT);
         }
 
+        // 폴더 경로 설정
+        String folderPath = "randb/";
         String uuid = UUID.randomUUID().toString();
-        return uuid+"."+extension;
+        return folderPath + uuid + "." + extension;
     }
 }
 

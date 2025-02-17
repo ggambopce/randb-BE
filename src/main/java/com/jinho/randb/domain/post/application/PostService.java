@@ -7,6 +7,7 @@ import com.jinho.randb.domain.post.dto.PostStatisticsResponseDto;
 import com.jinho.randb.domain.post.dto.request.UserAddRequest;
 import com.jinho.randb.domain.post.dto.request.UserUpdateRequest;
 import com.jinho.randb.domain.post.dto.response.*;
+import com.jinho.randb.global.security.oauth2.details.PrincipalDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -17,7 +18,7 @@ public interface PostService {
 
     void save(UserAddRequest userAddPostDto, Long accountId);
 
-    PostResponse postPage(Long postId, Pageable pageable);
+    PostSearchResponse searchPost(String searchKeyword, PostType postType, Long postId, Pageable pageable);
 
     Optional<Post> findById(Long id);
 
@@ -27,9 +28,9 @@ public interface PostService {
 
     MainPagePostResponse mainPagePost();
 
-    void delete(Long postId);
+    void delete(Long postId, Long accountId);
 
-    void update(Long postId, UserUpdateRequest userUpdatePostDto);
+    void update(Long postId, Long accountId, UserUpdateRequest userUpdatePostDto);
 
     void updatePostType(Long postId, PostType newType);
 

@@ -12,8 +12,7 @@ public interface SignUpService {
     Map<String, Boolean> LoginIdValid(String loginId);
 
     Map<String, Boolean> emailValid(String email);
-
-    void nickNameValid(String nickName);
+    
 
     Map<String,String> ValidationErrorMessage(AccountDto accountDto);
 }

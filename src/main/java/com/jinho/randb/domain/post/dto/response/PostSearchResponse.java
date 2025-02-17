@@ -3,13 +3,13 @@ package com.jinho.randb.domain.post.dto.response;
 import com.jinho.randb.domain.post.dto.PostDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class PostDetailResponse { // 응답 구조 명확히 정의
+public class PostSearchResponse {
 
-    private PostDto post;
-
+    private boolean nextPage;
+    private List<PostDto> posts;
 }

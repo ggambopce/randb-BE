@@ -1,5 +1,7 @@
 package com.jinho.randb.domain.opinionsummary.application;
 
+import com.jinho.randb.domain.account.dao.AccountRepository;
+import com.jinho.randb.domain.account.domain.Account;
 import com.jinho.randb.domain.opinion.application.OpinionService;
 import com.jinho.randb.domain.opinion.domain.OpinionType;
 import com.jinho.randb.domain.opinion.dto.OpinionContentAndTypeDto;
@@ -12,6 +14,8 @@ import com.jinho.randb.domain.post.application.PostService;
 import com.jinho.randb.domain.post.dao.PostRepository;
 import com.jinho.randb.domain.post.domain.Post;
 import com.jinho.randb.domain.post.domain.PostType;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchDataException;
+import com.jinho.randb.global.exception.ex.nosuch.NoSuchErrorType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -33,17 +37,23 @@ public class OpinionSummaryServiceImpl implements OpinionSummaryService {
 
 
     private final OpinionService opinionService;
+    private final AccountRepository accountRepository;
     private final OpinionSummaryRepository opinionSummaryRepository;
     private final PostRepository postRepository;
-    private final PostService postService;
     private final OpenAiChatModel openAiChatModel;
     //private final VertexAiGeminiChatModel vertexAiGeminiChatModel;
 
     @Override
-    public Map<String, String> summarizeAndSave(Long postId) {
+    public Map<String, String> summarizeAndSave(Long postId, Long accountId) {
+
+
+        Account account = getAccount(accountId);
         // 토론글 ID로 Post 조회
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 토론글을 찾을 수 없습니다."));
+
+        // 작성자 정보와 로그인 사용자 정보 검증
+        validatePostOwner(account, post);
 
         // 의견 데이터 가져오기
         List<OpinionContentAndTypeDto> opinionDtos = opinionService.findByPostId(postId);
@@ -119,5 +129,17 @@ public class OpinionSummaryServiceImpl implements OpinionSummaryService {
         // GPT 요약 요청
         String prompt = "다음은 " + opinionType + " 입장의 의견 목록입니다. 비속어나 비방하는 부분은 제외하고 논리정연하게 이 의견들을 요약하여 하나의 논설문으로 만들어 주세요:\n" + String.join("\n", opinions);
         return openAiChatModel.call(prompt);
+    }
+
+    /* 사용자 정보 조회 메서드*/
+    private Account getAccount(Long accountId) {
+        return accountRepository.findById(accountId).orElseThrow(() -> new NoSuchDataException(NoSuchErrorType.NO_SUCH_ACCOUNT));
+    }
+
+    /* 작성자 검증 메서드*/
+    private static void validatePostOwner(Account account, Post post) { // 객체를 생성하지 않고 호출하기위한 static
+        if(!post.getAccount().getLoginId().equals(account.getLoginId())) {
+            throw new IllegalArgumentException("작성자만 수정할 수 있습니다.");
+        }
     }
 }

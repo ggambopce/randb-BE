@@ -1,9 +1,12 @@
 package com.jinho.randb.domain.post.dao;
 
 import com.jinho.randb.domain.post.domain.Post;
+import com.jinho.randb.domain.post.domain.PostType;
 import com.jinho.randb.domain.post.dto.PostDto;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +17,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.jinho.randb.domain.account.domain.QAccount.account;
 import static com.jinho.randb.domain.post.domain.QPost.post;
+import static com.jinho.randb.domain.post.domain.QPostStatistics.postStatistics;
 
 @Slf4j
 @Repository
@@ -33,37 +38,72 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
 
         Post postDetail = jpaQueryFactory
                 .selectFrom(post)
-                .leftJoin(post.account).fetchJoin()  // account와 조인하여 작성자 정보도 가져옴
+                .leftJoin(post.profile).fetchJoin()  // profile와 조인하여 작성자 정보도 가져옴
                 .where(post.id.eq(postId))
                 .fetchOne();
 
         if (postDetail == null) {
             throw new RuntimeException("Post not found for id: " + postId);
         }
-        return PostDto.of(postDetail);
+        return PostDto.of(postDetail); // 엔티티를 DTO로 변환
 
     }
 
     /**
+     * 토론중으로 검색시 랜덤 순 4개 무한스크롤
+     * 투표중으로 검색시 RED와 BLUE비율이 박빙인 순 4개 무한스크롤
+     * 토론완료로 검색시 좋아요 순 으로 4개 무한스크롤
      * 토론글의 대해서 무한 페이징을 통해 페이징 처리 no-offset 방식을 사용(무한스크롤)
      */
     @Override
-    public Slice<PostDto> getAllPost(Long postId, Pageable pageable) {
+    public Slice<PostDto> searchPosts(String searchKeyword, PostType postType, Long lastPostId, Pageable pageable) {
 
         // 동적 쿼리 조건 생성
         BooleanBuilder builder = new BooleanBuilder();
-        if (postId != null) {
-            builder.and(post.id.gt(postId)); // postId 이후의 게시글만 조회
+        if (searchKeyword != null && !searchKeyword.isEmpty()) {
+            builder.and(post.postTitle.containsIgnoreCase(searchKeyword)); // 제목 검색
+        }
+        if (postType != null) {
+            builder.and(post.postType.eq(postType)); // postType 필터
+        }
+        if (lastPostId != null) {
+            builder.and(post.id.lt(lastPostId)); // 마지막 postId 이후의 데이터
         }
 
-        // QueryDSL을 사용해 데이터 조회
-        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.type, post.createdAt, account.username)
+        // QueryDSL로 데이터 조회 및 정렬 조건 설정
+        JPAQuery<Tuple> query = jpaQueryFactory
+                .select(post.id, post.postTitle, post.postContent, post.postType, post.likeCount, post.createdAt, account.username)
                 .from(post)
                 .leftJoin(post.account, account) // 게시글 작성자와 조인
                 .where(builder)
-                .orderBy(post.createdAt.desc()) // 생성일 기준 내림차순 정렬
-                .limit(pageable.getPageSize() + 1) // 페이지 크기 + 1로 데이터 조회
-                .fetch();
+                .limit(pageable.getPageSize() + 1); // 페이지 크기 + 1 조회
+
+        // 정렬 조건
+        if (postType != null) {
+            switch (postType) {
+                case DISCUSSING:
+                    query.orderBy(Expressions.numberTemplate(Double.class, "function('RAND')").asc()); // 랜덤 정렬
+                    break;
+                case VOTING:
+                    query.leftJoin(postStatistics).on(post.id.eq(postStatistics.post.id))
+                            .orderBy(Expressions.numberTemplate(Double.class,
+                                    "ABS({0} - {1})",
+                                    postStatistics.redVotePercentage,
+                                    postStatistics.blueVotePercentage).asc()); // 박빙 순
+                    break;
+                case COMPLETED:
+                    query.orderBy(post.likeCount.desc()); // 좋아요 순
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported PostType: " + postType);
+            }
+        } else {
+            // 타입 지정이 없는 경우 랜덤 정렬
+            query.orderBy(Expressions.numberTemplate(Double.class, "function('RAND')").asc());
+        }
+
+        // 결과 조회
+        List<Tuple> list = query.fetch();
 
         // 조회된 Tuple 데이터를 PostDto로 변환
         List<PostDto> collect = list.stream()
@@ -72,7 +112,9 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
                         tuple.get(post.postTitle),
                         tuple.get(post.postContent),
                         tuple.get(account.username),
-                        tuple.get(post.type)
+                        tuple.get(account.profile.id),
+                        tuple.get(post.postType),
+                        tuple.get(post.likeCount)
                 ))
                 .collect(Collectors.toList());
 
@@ -83,19 +125,71 @@ public class CustomPostRepositoryImpl implements CustomPostRepository {
         return new SliceImpl<>(collect, pageable, hasNext);
     }
 
+    /**
+     * 메인 페이지 토론글 4개 조회
+     * 상태에 따라 다른 조건으로 조회 토론중/투표중 랜덤1개, 투표완료 좋아요순2개
+     */
     @Override
     public List<PostDto> mainPagePost() {
 
-        //튜플로 토론글 id, 제목, 내용을 조회
-        List<Tuple> list = jpaQueryFactory.select(post.id, post.postTitle, post.postContent, post.type)
+        // "토론중" 상태 랜덤 1개
+        List<Tuple> discussingPost = jpaQueryFactory.select(
+                        post.id,
+                        post.postTitle,
+                        post.postContent,
+                        post.postType,
+                        post.likeCount
+                )
                 .from(post)
+                .where(post.postType.eq(PostType.DISCUSSING)) // "토론중" 조건
+                .orderBy(Expressions.numberTemplate(Double.class, "function('rand')").asc()) // 랜덤 정렬
+                .limit(1) // 1개만 가져오기
                 .fetch();
 
-        return list.stream().map(tuple -> PostDto.from(tuple.get(post.id),
-                tuple.get(post.postTitle),
-                tuple.get(post.postContent),
-                tuple.get(post.type)
-                )).collect(Collectors.toList());
+        // "투표중" 상태 랜덤 1개
+        List<Tuple> votingPost = jpaQueryFactory.select(
+                        post.id,
+                        post.postTitle,
+                        post.postContent,
+                        post.postType,
+                        post.likeCount
+                )
+                .from(post)
+                .where(post.postType.eq(PostType.VOTING)) // "투표중" 조건
+                .orderBy(Expressions.numberTemplate(Double.class, "function('rand')").asc()) // 랜덤 정렬
+                .limit(1) // 1개만 가져오기
+                .fetch();
+
+        // "토론 완료" 상태 좋아요 순 상위 2개
+        List<Tuple> completedPosts = jpaQueryFactory.select(
+                        post.id,
+                        post.postTitle,
+                        post.postContent,
+                        post.postType,
+                        post.likeCount
+                )
+                .from(post)
+                .where(post.postType.eq(PostType.COMPLETED)) // "토론 완료" 조건
+                .orderBy(post.likeCount.desc()) // 좋아요 내림차순 정렬
+                .limit(2) // 상위 2개 가져오기
+                .fetch();
+
+        // 모든 리스트를 병합
+        List<Tuple> combinedList = Stream.concat(
+                Stream.concat(discussingPost.stream(), votingPost.stream()),
+                completedPosts.stream()
+        ).collect(Collectors.toList());
+
+        // DTO로 변환하여 반환
+        return combinedList.stream()
+                .map(tuple -> PostDto.from(
+                        tuple.get(post.id),
+                        tuple.get(post.postTitle),
+                        tuple.get(post.postContent),
+                        tuple.get(post.postType),
+                        tuple.get(post.likeCount)
+                ))
+                .collect(Collectors.toList());
     } //from은 정적 팩토리 메서드로 new 키워드를 사용하는 것과는 다른 방식. 팩토리 메서드는 new 없이 호출
 
     /**

@@ -3,6 +3,8 @@ package com.jinho.randb.global.jwt.service;
 import com.jinho.randb.domain.account.dao.AccountRepository;
 import com.jinho.randb.domain.account.domain.Account;
 import com.jinho.randb.domain.account.dto.AccountDto;
+import com.jinho.randb.domain.profile.dao.ProfileRepository;
+import com.jinho.randb.domain.profile.domain.Profile;
 import com.jinho.randb.global.exception.ex.JwtTokenException;
 import com.jinho.randb.global.jwt.controller.LoginDto;
 import com.jinho.randb.global.jwt.dto.AccountInfoResponse;
@@ -35,6 +37,7 @@ public class JwtAuthServiceImpl implements JwtAuthService {
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final ProfileRepository profileRepository;
 
     /**
      * 주어진 로그인 DTO를 사용하여 사용자를 인증하고, 성공적으로 인증되면 액세스 토큰과 리프레시 토큰을 생성하여 반환.
@@ -74,11 +77,15 @@ public class JwtAuthServiceImpl implements JwtAuthService {
     @Override
     public AccountInfoResponse accessTokenMemberInfo(String accessToken) {
         String loginId = jwtProvider.validateAccessToken(accessToken);
-        Account byLoginId = accountRepository.findByLoginId(loginId);
-        if(byLoginId!=null){
-            return AccountInfoResponse.of(AccountDto.from(byLoginId));
-        }else
+        Account account = accountRepository.findByLoginId(loginId);
+        if (account != null) {
+            // Account ID를 기반으로 Profile 조회 (없으면 null 반환)
+            Profile profile = profileRepository.findByAccountId(account.getId()).orElse(null);
+
+            return AccountInfoResponse.of(AccountDto.from(account), profile);
+        } else {
             throw new NoSuchElementException("사용자를 찾을 수 없습니다.");
+        }
     }
 
     @Override

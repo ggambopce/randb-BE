@@ -25,7 +25,7 @@ public class UploadFile {
     @Column(length = 400,name = "store_file_name")
     private String storeFileName;       // DB에 저장될 파일명
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Profile profile;
 

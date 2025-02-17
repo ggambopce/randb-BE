@@ -22,8 +22,10 @@ public class OpinionContentAndTypeDto {
 
     private String opinionContent;
 
-    @Schema(description = "작성자 이름", example = "정의란 무엇인가")
-    private String username;
+    @Schema(description = "작성자 이름", example = "홍길동")
+    private String nickname;
+
+    private Long profileId;
 
     private OpinionType opinionType;
 
@@ -37,7 +39,8 @@ public class OpinionContentAndTypeDto {
         return OpinionContentAndTypeDto.builder()
                 .id(opinion.getId())
                 .opinionContent(opinion.getOpinionContent())
-                .username(opinion.getAccount().getUsername())
+                .nickname(opinion.getProfile().getNickname())
+                .profileId(opinion.getProfile().getId())
                 .opinionType(opinion.getOpinionType())
                 .create_at(opinion.getCreated_at())
                 .updated_at(opinion.getUpdated_at())
