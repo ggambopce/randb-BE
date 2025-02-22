@@ -60,6 +60,7 @@ public class SecurityConfig {
         //경로별 인가 작업
         http
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/static/**").permitAll() // ✅ 정적 파일 허용
                         .requestMatchers("/**").permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -99,7 +100,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:*"));
+        config.setAllowedOriginPatterns(Arrays.asList("https://jinorandb.com","http://localhost:*"));
         config.setAllowedMethods(Arrays.asList("HEAD","POST","GET","DELETE","PUT"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Set-Cookie")); // Set-Cookie 헤더 노출
