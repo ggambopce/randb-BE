@@ -88,13 +88,6 @@
 ## 📋 API 명세서
 <img alt=".png" src="https://github.com/user-attachments/assets/53ed2d94-ca30-49dd-8193-c5da93ab2d44" width="700"/>
 
-## 🎯 트러블 슈팅
-> - []()<br>
-> - []()<br>
-> - []()<br>
-> - []()<br>
-> - []()<br>
-
 
 ## 💬Convention
 - 커밋 메시지
