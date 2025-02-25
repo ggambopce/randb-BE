@@ -51,11 +51,21 @@
 <img src="https://img.shields.io/badge/JUnit5-25A162?style=flat-square&logo=JUnit5&logoColor=white"/></img>
 </p>
 
+<h3 align="center"> 배포 및 운영 환경 </h3>
+<p align="center"> 
+<img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=Docker&logoColor=white"/> 
+    <img src="https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=Nginx&logoColor=white"/>  
+    <img src="https://img.shields.io/badge/Docker Hub-0db7ed?style=flat-square&logo=Docker&logoColor=white"/> 
+    <img src="https://img.shields.io/badge/Ubuntu 20.04-E95420?style=flat-square&logo=Ubuntu&logoColor=white"/> 
+    <img src="https://img.shields.io/badge/Windows Server-0078D6?style=flat-square&logo=Windows&logoColor=white"/> 
+</p>
+
 <h3 align="center"> 보안 </h3>
 <p align="center">
 <img src="https://img.shields.io/badge/Spring Security-6DB33F?style=flat-square&logo=Spring Security&logoColor=white"/></img>
 <img src="https://img.shields.io/badge/OAuth2.0-EB5424?style=flat-square&logo=querydsl&logoColor=white"/></img>
 <img src="https://img.shields.io/badge/JWT-6DB33F?style=flat-square&logo=JsonWebTokens&logoColor=white"/></img>
+<img src="https://img.shields.io/badge/SSL/TLS-0033A0?style=flat-square&logo=LetsEncrypt&logoColor=white"/></img>
 
 <h3 align="center"> DB </h3>
 
