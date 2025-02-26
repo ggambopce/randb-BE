@@ -100,7 +100,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(Arrays.asList("https://jinorandb.com","http://localhost:*"));
+        config.setAllowedOriginPatterns(Arrays.asList("https://jinorandb.com"));
         config.setAllowedMethods(Arrays.asList("HEAD","POST","GET","DELETE","PUT"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Set-Cookie")); // Set-Cookie 헤더 노출
