@@ -92,7 +92,7 @@
 
 
 ## 💾 ERD
-<img width="1121" alt="Image" src="https://github.com/user-attachments/assets/64c19d72-dc72-42fd-95d5-8d38f779a481" width="500"/>
+<img alt=".png" src="https://github.com/user-attachments/assets/6af381fd-0263-490e-91dc-826d224cab8a" width="700"/>
 <br>
 
 ## 📋 API 명세서
