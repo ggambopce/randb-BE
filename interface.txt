@@ -1,0 +1,156 @@
+V2 API명세 추가
+==================================================================
+
+favoriteList(좋아요 리스트)
+
+- URL
+GET /api/post/favorite-list/{boardNumber}
+
+
+- response
+
+성공
+Http Status - 200 (OK)
+{
+    code: "SU",
+    message: "Succese",
+    favoriteList: FavoriteListItem[]
+}
+
+FavoriteListItem {
+    email: string,
+    nickname: string,
+    profileImage: string
+}
+실패
+- 데이터베이스 에러
+Http Status - 500 (Internal Server Error)
+{
+    code : "DE"
+    message : "Database Error."
+}
+
+==================================================================
+
+putFavorite(좋아요 기능)
+
+- URL
+POST /api/post/favorite
+
+- Header
+Authorization : Bearer Token
+
+- request
+
+{
+    boardNumber: int
+}
+
+- response
+
+성공
+Http Status - 200 (OK)
+{
+    code: "SU",
+    message: "Succese",
+}
+
+실패
+- 데이터베이스 에러
+Http Status - 500 (Internal Server Error)
+{
+    code : "DE"
+    message : "Database Error."
+}
+
+==================================================================
+HotTop5List(주간 상위 3 게시물)
+
+- URL
+/api/post/hot-top5
+
+- response
+
+성공
+Http Status - 200 (OK)
+{
+    code: "SU",
+    message: "Succese",
+    top3List: PostListItem[]
+}
+
+PostListItem
+{
+    postNumber: int,
+    title: string,
+    content: string,
+    boardTitleImage: string,
+    favoriteCount: int,
+    commentCount: int,
+    viewCount: int,
+    writeDateTime: string,
+    writerNickname: string,
+    writerProfileImage: string,
+}
+
+실패
+- 데이터베이스 에러
+Http Status - 500 (Internal Server Error)
+{
+    code : "DE"
+    message : "Database Error."
+}
+
+==================================================================
+
+popularWordList(인기 검색어 리스트)
+
+- URL
+GET /api/search/popular-list
+
+- response
+
+성공
+Http Status - 200 (OK)
+{
+    code: "SU",
+    message: "Succese",
+    popularWordList: String[]
+}
+
+실패
+- 데이터베이스 에러
+Http Status - 500 (Internal Server Error)
+{
+    code : "DE"
+    message : "Database Error."
+}
+
+
+==================================================================
+
+relativeWordList(관련 검색어 리스트)
+
+- URL
+GET /api/search/{searchWord}/relation-list
+
+- response
+
+성공
+Http Status - 200 (OK)
+{
+    code: "SU",
+    message: "Succese",
+    relativeWordList: string[]
+}
+
+실패
+- 데이터베이스 에러
+Http Status - 500 (Internal Server Error)
+{
+    code : "DE"
+    message : "Database Error."
+}
+
+
+==================================================================

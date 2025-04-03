@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,6 +41,7 @@ public class SecurityConfig {
 
         // AuthenticationManager 가져오기
         AuthenticationManager authenticationManager = authenticationConfiguration.getAuthenticationManager();
+
         //csrf disable
         http
                 .csrf((auth) -> auth.disable());
@@ -48,7 +50,7 @@ public class SecurityConfig {
                 .formLogin((auth) -> auth.disable());
         // cors 설정
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())); // CORS 설정 적용
+                .cors(Customizer.withDefaults()); // CORS 설정 적용
         //HTTP Basic 인증 방식 disable
         http
                 .httpBasic((auth) -> auth.disable());
@@ -100,7 +102,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(Arrays.asList("https://jinorandb.com"));
+        config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
         config.setAllowedMethods(Arrays.asList("HEAD","POST","GET","DELETE","PUT"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Set-Cookie")); // Set-Cookie 헤더 노출
